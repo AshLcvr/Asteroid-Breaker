@@ -5,9 +5,6 @@ import { levelConstructorArray } from "./levelConstruct.js";
 // Canvas & Context
 const canvas            = document.getElementById("myCanvas");
 const ctx               = canvas.getContext("2d");
-// MArche psa
-// ctx.fillStyle = levelConstructorArray[levelIndex].canvasBackground
-// ctx.fill();
 
 // Ball
 const ballRadius       = 10;
@@ -31,13 +28,14 @@ let gamePaused         = false;
 let itemDropped        = false;
 
 // Bonus
+import {bonusArray,createImageObject} from "./objects.js";
+export let lifeUp            = ()=>{ lives++ };
+export let modifyPaddleWidth = width => { paddleWidth = width };
 let bx;
 let by;
 let item;
 let activeItems  = [];
-import {bonusArray,createBonus} from "./objects.js";
-export let lifeUp            = ()=>{ lives++ };
-export let modifyPaddleWidth = width => { paddleWidth = width };
+let imageArray   = createImageObject();
 
 // Bricks
 let brickRowCount;
@@ -54,6 +52,7 @@ brickBackground.src   = levelConstructorArray[levelIndex].brickBackground;
 game(levelIndex);
 
 function game(levelIndex) {
+
     levelIndex > 0 ? pause() : null;
 
     levelConstructor();
@@ -62,10 +61,10 @@ function game(levelIndex) {
 
     draw();
 
-        document.addEventListener("keydown", keyDownHandler, false);
-        document.addEventListener("keyup", keyUpHandler, false);
-        document.addEventListener("mousemove", mouseMoveHandler, false);
-        document.addEventListener("keyup", spaceBarHandler, false);
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseMoveHandler, false);
+    document.addEventListener("keyup", spaceBarHandler, false);
 
     const Direction = {
         'Up' : keyUpHandler,
@@ -128,24 +127,33 @@ function game(levelIndex) {
         return bricks
     }
 
+    function drawItem(bx,by) {
+        ctx.beginPath();
+        ctx.rect(bx,by,20,20);
+        ctx.fillStyle = ctx.createPattern(imageArray[item.name],'repeat');
+        ctx.fill();
+        ctx.closePath();
+        // Si le joueur attrape l'objet
+        if(by === canvas.height - paddleHeight - 15 && x < paddleX + paddleWidth){
+            itemDropped = false;
+            activeItems.push(item);
+            paddleColor = "red"
+        }
+        // Si l'objet n'est pas attrapé
+        if(by === canvas.height ){
+            itemDropped = false;
+        }
+    }
+
     function actionTimedItem(item){
         if (item.time !== 0){
             item.action();
             item.time -= 1;
         }else{
+            paddleColor = 'white';
             item.reverseAction();
             activeItems.pop();
         }
-    }
-
-    function testitem(bx,by) {
-        let img = () => {let img = new Image(); img.src = item.img; return img};
-        ctx.beginPath();
-        ctx.clearRect(bx,by,200,200);
-        ctx.rect(200,y,200,200);
-        ctx.fillStyle = ctx.createPattern(img(),'repeat');
-        ctx.fill();
-        ctx.closePath()
     }
 
     function draw() {
@@ -157,14 +165,10 @@ function game(levelIndex) {
         drawLives();
         collisionDetection();
 
-
         if (itemDropped) {
-            // drawItem(bx);
-            testitem(bx,by)
-            // by++;
-
+            drawItem(bx,by)
             if (!gamePaused){
-                by  ++;
+                by  += 2;
             }
         }
         if (activeItems.length !== 0){
@@ -223,6 +227,7 @@ function game(levelIndex) {
                     bricks[c][r].y = brickY;
                     ctx.beginPath();
                     ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                    // si la brique contient un bonus
                     if (bricks[c][r].bonus){
                         ctx.fillStyle = "gold";
                     }else{
@@ -292,29 +297,6 @@ function game(levelIndex) {
         }
     }
 
-
-    function drawItem() {
-        // Si l'objet est sur l'écran
-        if (by < canvas.height - paddleHeight){
-            // createBonus(item.img, bx,by)
-            // ctx.beginPath();
-            // ctx.rect(bx, by, 30,30);
-            // ctx.fillStyle = ctx.createPattern(item.img,'repeat');
-            // ctx.fill();
-            // ctx.closePath()
-        }
-        // Si le joueur attrape l'objet
-        if(by === canvas.height - paddleHeight - 15 && x < paddleX + paddleWidth){
-            itemDropped = false;
-            activeItems.push(item);
-            paddleColor = "red"
-        }
-        // Si l'objet n'est pas attrapé
-        if(by === canvas.height ){
-            itemDropped = false;
-        }
-    }
-
     function drawPauseMenu() {
         ctx.font = "132px space";
         ctx.fillStyle = "#f6fff4";
@@ -372,3 +354,4 @@ function game(levelIndex) {
         }
     }
 }
+
