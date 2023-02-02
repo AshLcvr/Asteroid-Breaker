@@ -1,0 +1,25 @@
+@font-face {
+    font-family: space;
+    src: url("../font/SpaceMission-rgyw9.otf");
+}
+
+* {
+    padding: 0;
+    margin: 0;
+}
+
+#myCanvas {
+    display: block;
+    margin: 0 auto;
+    background-image: url("../img/background_level1.jpg");
+    background-position: center;
+}
+
+
+/*#imageObject {*/
+/*    display: block;*/
+/*    margin: 0 auto;*/
+/*    background-image : url("../img/item/gold_heart.png");*/
+/*    background-position: center;*/
+/*}*/
+
