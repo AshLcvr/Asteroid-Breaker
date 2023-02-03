@@ -45,6 +45,7 @@ let brickHeight;
 let brickPadding;
 let brickOffsetTop;
 let brickOffsetLeft;
+let brokenBricks = 0;
 const brickBackground = new Image();
 brickBackground.src   = levelConstructorArray[levelIndex].brickBackground;
 
@@ -66,6 +67,7 @@ function game(levelIndex) {
     document.addEventListener("mousemove", mouseMoveHandler, false);
     document.addEventListener("keyup", spaceBarHandler, false);
 
+    // Essai enum
     const Direction = {
         'Up' : keyUpHandler,
         'Down' : keyDownHandler,
@@ -127,35 +129,6 @@ function game(levelIndex) {
         return bricks
     }
 
-    function drawItem(bx,by) {
-        ctx.beginPath();
-        ctx.rect(bx,by,20,20);
-        ctx.fillStyle = ctx.createPattern(imageArray[item.name],'repeat');
-        ctx.fill();
-        ctx.closePath();
-        // Si le joueur attrape l'objet
-        if(by === canvas.height - paddleHeight - 15 && x < paddleX + paddleWidth){
-            itemDropped = false;
-            activeItems.push(item);
-            paddleColor = "red"
-        }
-        // Si l'objet n'est pas attrapé
-        if(by === canvas.height ){
-            itemDropped = false;
-        }
-    }
-
-    function actionTimedItem(item){
-        if (item.time !== 0){
-            item.action? item.action() : null;
-            item.time -= 1;
-        }else{
-            activeItems.pop();
-            paddleColor = 'white';
-            item.reverseAction? item.reverseAction() : null;
-        }
-    }
-
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawBricks();
@@ -188,9 +161,18 @@ function game(levelIndex) {
         }
         else if(y + directions.dy > canvas.height-ballRadius) {
             if(x > paddleX && x < paddleX + paddleWidth) {
-                directions.dy = -directions.dy;
-            }
-            else {
+                if (activeItems.length > 0){
+                    for (let o = 0; o < activeItems.length; o++) {
+                        if (activeItems[o].name === 'magnetBall') {
+                            directions.dy = 0;
+                            directions.dx = 0;
+                            x = paddleX;
+                        }
+                    }
+                } else {
+                    directions.dy = -directions.dy;
+                }
+            } else {
                 lives--;
                 if(!lives) {
                     alert("GAME OVER");
@@ -257,6 +239,24 @@ function game(levelIndex) {
         ctx.closePath();
     }
 
+    function drawItem(bx,by) {
+        ctx.beginPath();
+        ctx.rect(bx,by,20,20);
+        ctx.fillStyle = ctx.createPattern(imageArray[item.name],'repeat');
+        ctx.fill();
+        ctx.closePath();
+        // Si le joueur attrape l'objet
+        if(by === canvas.height - paddleHeight - 15 && x < paddleX + paddleWidth){
+            itemDropped = false;
+            activeItems.push(item);
+            paddleColor = "red"
+        }
+        // Si l'objet n'est pas attrapé
+        if(by === canvas.height ){
+            itemDropped = false;
+        }
+    }
+
     function drawScore() {
         ctx.font = "32px space";
         ctx.fillStyle = "#f6fff4";
@@ -267,6 +267,12 @@ function game(levelIndex) {
         ctx.font = "32px space";
         ctx.fillStyle = "#f6fff4";
         ctx.fillText("Vies: "+lives, canvas.width-120, 40);
+    }
+
+    function drawPauseMenu() {
+        ctx.font = "132px space";
+        ctx.fillStyle = "#f6fff4";
+        ctx.fillText("PAUSE", 300, 350);
     }
 
     function collisionDetection() {
@@ -287,7 +293,7 @@ function game(levelIndex) {
                             item              = b.object;
                         }
                         // Niveau terminé
-                        if(score === brickRowCount*brickColumnCount) {
+                        if(brokenBricks === brickRowCount*brickColumnCount) {
                             levelIndex++;
                             game(levelIndex);
                         }
@@ -295,12 +301,6 @@ function game(levelIndex) {
                 }
             }
         }
-    }
-
-    function drawPauseMenu() {
-        ctx.font = "132px space";
-        ctx.fillStyle = "#f6fff4";
-        ctx.fillText("PAUSE", 300, 350);
     }
 
     function pause(){
@@ -319,6 +319,7 @@ function game(levelIndex) {
     }
 
     function scoreUp() {
+        brokenBricks++;
         if (activeItems.length > 0){
             for (let o = 0; o < activeItems.length; o++) {
                 if (activeItems[o].name === 'multiplyScore') {
@@ -327,6 +328,17 @@ function game(levelIndex) {
             }
         } else {
             return score++;
+        }
+    }
+
+    function actionTimedItem(item){
+        if (item.time !== 0){
+            item.action? item.action() : null;
+            item.time -= 1;
+        }else{
+            activeItems.pop();
+            paddleColor = 'white';
+            item.reverseAction? item.reverseAction() : null;
         }
     }
 
@@ -366,4 +378,3 @@ function game(levelIndex) {
         }
     }
 }
-

@@ -12,32 +12,38 @@ export function createImageObject() {
 }
 
 export const bonusArray = [
+    // {
+    //     name   : 'life',
+    //     text   : "+1 VIE",
+    //     time   : null,
+    //     img    : "assets/img/item/gold_heart.png",
+    //     action : () => {
+    //         lifeUp();
+    //     },
+    // },
+    // {
+    //     name   : 'bigPaddle' ,
+    //     text   : "BIG PADDLE",
+    //     time   : 1000,
+    //     img    : "assets/img/test.png",
+    //     action : () => {
+    //         if (paddleWidth !== 85*2 ){
+    //             modifyPaddleWidth(paddleWidth*2)
+    //         }
+    //     },
+    //     reverseAction : () => {
+    //         modifyPaddleWidth(85)
+    //     }
+    // },
+    // {
+    //     name   : 'multiplyScore' ,
+    //     text   : "Score X2",
+    //     time   : 1000,
+    //     img    : "assets/img/test.png",
+    // },
     {
-        name   : 'life',
-        text   : "+1 VIE",
-        time   : null,
-        img    : "assets/img/item/gold_heart.png",
-        action : () => {
-            lifeUp();
-        },
-    },
-    {
-        name   : 'bigPaddle' ,
-        text   : "BIG PADDLE",
-        time   : 1000,
-        img    : "assets/img/test.png",
-        action : () => {
-            if (paddleWidth !== 85*2 ){
-                modifyPaddleWidth(paddleWidth*2)
-            }
-        },
-        reverseAction : () => {
-            modifyPaddleWidth(85)
-        }
-    },
-    {
-        name   : 'multiplyScore' ,
-        text   : "Score X2",
+        name   : 'magnetBall' ,
+        text   : "Magnetic Ball",
         time   : 1000,
         img    : "assets/img/test.png",
     }
