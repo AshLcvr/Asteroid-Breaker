@@ -147,12 +147,12 @@ function game(levelIndex) {
 
     function actionTimedItem(item){
         if (item.time !== 0){
-            item.action();
+            item.action? item.action() : null;
             item.time -= 1;
         }else{
-            paddleColor = 'white';
-            item.reverseAction();
             activeItems.pop();
+            paddleColor = 'white';
+            item.reverseAction? item.reverseAction() : null;
         }
     }
 
@@ -166,7 +166,7 @@ function game(levelIndex) {
         collisionDetection();
 
         if (itemDropped) {
-            drawItem(bx,by)
+            drawItem(bx,by);
             if (!gamePaused){
                 by  += 2;
             }
@@ -277,7 +277,7 @@ function game(levelIndex) {
                     if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
                         directions.dy = -directions.dy;
                         b.status      = 0;
-                        score++;
+                        scoreUp();
                         // Si la brique contient un bonus
                         if (b.bonus) {
                             itemDropped = true;
@@ -315,6 +315,18 @@ function game(levelIndex) {
             directions.dx = 0;
             directions.dy = 0;
             gamePaused    = true;
+        }
+    }
+
+    function scoreUp() {
+        if (activeItems.length > 0){
+            for (let o = 0; o < activeItems.length; o++) {
+                if (activeItems[o].name === 'multiplyScore') {
+                    return score += 2;
+                }
+            }
+        } else {
+            return score++;
         }
     }
 

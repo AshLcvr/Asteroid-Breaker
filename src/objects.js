@@ -34,5 +34,11 @@ export const bonusArray = [
         reverseAction : () => {
             modifyPaddleWidth(85)
         }
+    },
+    {
+        name   : 'multiplyScore' ,
+        text   : "Score X2",
+        time   : 1000,
+        img    : "assets/img/test.png",
     }
 ];
