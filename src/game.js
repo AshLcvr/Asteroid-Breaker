@@ -3,8 +3,8 @@ let levelIndex = 0;
 import { levelConstructorArray } from "./levelConstruct.js";
 
 // Canvas & Context
-const canvas            = document.getElementById("myCanvas");
-const ctx               = canvas.getContext("2d");
+const canvas           = document.getElementById("myCanvas");
+const ctx              = canvas.getContext("2d");
 
 // Ball
 const ballRadius       = 10;
@@ -28,14 +28,19 @@ let gamePaused         = false;
 let itemDropped        = false;
 
 // Bonus
-import {bonusArray,createImageObject} from "./objects.js";
+import {bonusObject,createImageObject} from "./objects.js";
 export let lifeUp            = ()=>{ lives++ };
 export let modifyPaddleWidth = width => { paddleWidth = width };
+export let fireLauncher      = (boolean) => {  isArmed = boolean};
+export let isArmed       = false;
 let bx;
 let by;
 let item;
-let activeItems  = [];
+let activeItems  = {};
 let imageArray   = createImageObject();
+let isMagnetBall = false;
+let hasFired     = false;
+let launchedAmmo = [];
 
 // Bricks
 let brickRowCount;
@@ -45,7 +50,7 @@ let brickHeight;
 let brickPadding;
 let brickOffsetTop;
 let brickOffsetLeft;
-let brokenBricks = 0;
+let brokenBricks      = 0;
 const brickBackground = new Image();
 brickBackground.src   = levelConstructorArray[levelIndex].brickBackground;
 
@@ -62,26 +67,28 @@ function game(levelIndex) {
 
     draw();
 
-    document.addEventListener("keydown", keyDownHandler, false);
-    document.addEventListener("keyup", keyUpHandler, false);
-    document.addEventListener("mousemove", mouseMoveHandler, false);
-    document.addEventListener("keyup", spaceBarHandler, false);
-
-    // Essai enum
-    const Direction = {
-        'Up' : keyUpHandler,
-        'Down' : keyDownHandler,
-        'Mousemove' : mouseMoveHandler,
-        'Space' : spaceBarHandler
+    // Init keyboard and mouse inputs detection
+    const DirectionsInput = {
+        'Up'        : {type : "keyup" , function : keyUpHandler},
+        'Down'      : {type : "keydown" , function : keyDownHandler},
+        'Mousemove' : {type : "mousemove" , function : mouseMoveHandler},
+        'Space'     : {type : "keyup" , function : spaceBarHandler},
+        'Launch'    : {type : "keyup" , function : launchHandler},
+        'Fire'      : {type : "keyup" , function : fireHandler}
     };
+
+    for (let directionName in DirectionsInput){
+        let direction = DirectionsInput[directionName];
+        document.addEventListener(direction.type, direction.function, false);
+    }
 
     // Functions
     function levelConstructor(){
         // Reset Paddle & Ball
         lives < 3 ? lives++ : null;
-        x                 = canvas.width/2;
-        y                 = canvas.height-30;
+        y                 = canvas.height-25;
         paddleX           = (canvas.width-paddleWidth)/2;
+        isMagnetBall      = true;
 
         // Setting props from imported array
         brickRowCount     = levelConstructorArray[levelIndex].brickRowCount;
@@ -98,9 +105,10 @@ function game(levelIndex) {
         return 40;
     }
 
-    function randomObjectBonus(bonusArray) {
-        let randIndex = Math.floor(Math.random() * (bonusArray.length));
-        return bonusArray[randIndex];
+    function randomObjectBonus(bonusObject) {
+        let bonusArray = Object.keys(bonusObject);
+        let randIndex  = Math.floor(Math.random() * (Object.keys(bonusArray).length));
+        return bonusObject[bonusArray[randIndex]];
     }
 
     function brickConstructor() {
@@ -120,7 +128,7 @@ function game(levelIndex) {
                         status : 1,
                         number : brickNumber,
                         bonus  : true,
-                        object : randomObjectBonus(bonusArray)};
+                        object : randomObjectBonus(bonusObject)}
                 }else{
                     bricks[c][r] = {x: 0, y: 0, status: 1, number: brickNumber, bonus : false };
                 }
@@ -144,11 +152,26 @@ function game(levelIndex) {
                 by  += 2;
             }
         }
-        if (activeItems.length !== 0){
-            for (let i = 0 ; i < activeItems.length; i++){
-                let item   = activeItems[i];
-                item.time !== null? actionTimedItem(item) : (()=>{item.action();activeItems.pop()})();
+        if (Object.keys(activeItems).length !== 0){
+            for (let oneItem in activeItems){
+                let item   = activeItems[oneItem];
+                item.time !== null? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})();
             }
+        }
+        if (activeItems['fireLauncher'] !== undefined){
+            if (hasFired){
+                if (!gamePaused){
+                    // Les projectiles s'effacent quand isArmed retourne à false
+                    for (let i = 0; i < launchedAmmo.length; i++){
+                        drawFireAnimation(launchedAmmo[i])
+                    }
+                }
+            }
+        }
+        if (isMagnetBall){
+            x             = paddleX + paddleWidth/2;
+            directions.dx = 0;
+            directions.dy = 0;
         }
         if (gamePaused){
             drawPauseMenu();
@@ -161,14 +184,11 @@ function game(levelIndex) {
         }
         else if(y + directions.dy > canvas.height-ballRadius) {
             if(x > paddleX && x < paddleX + paddleWidth) {
-                if (activeItems.length > 0){
-                    for (let o = 0; o < activeItems.length; o++) {
-                        if (activeItems[o].name === 'magnetBall') {
-                            directions.dy = 0;
-                            directions.dx = 0;
-                            x = paddleX;
-                        }
-                    }
+                if (activeItems['magnetBall'] !== undefined){
+                    y -= 10;
+                    directions.dx = 0;
+                    directions.dy = 0;
+                    isMagnetBall = true
                 } else {
                     directions.dy = -directions.dy;
                 }
@@ -232,9 +252,32 @@ function game(levelIndex) {
     }
 
     function drawPaddle(paddleColor) {
+        if (isArmed){
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+            ctx.fillStyle = 'pink';
+            ctx.fill();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.rect(paddleX-20, canvas.height-paddleHeight, 20, paddleHeight);
+            ctx.rect(paddleX+paddleWidth, canvas.height-paddleHeight, 20, paddleHeight);
+            ctx.fillStyle = 'grey';
+            ctx.fill();
+        }else{
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+            ctx.fillStyle = paddleColor;
+            ctx.fill();
+            ctx.closePath();
+        }
+    }
+
+    function drawFireAnimation(activeAmmo){
+        activeAmmo.ammoY -= 2;
         ctx.beginPath();
-        ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
-        ctx.fillStyle = paddleColor;
+        ctx.arc(activeAmmo.leftAmmoX, activeAmmo.ammoY, ballRadius, 0, Math.PI*2);
+        ctx.arc(activeAmmo.rightAmmoX, activeAmmo.ammoY, ballRadius, 0, Math.PI*2);
+        ctx.fillStyle = 'blue';
         ctx.fill();
         ctx.closePath();
     }
@@ -248,7 +291,7 @@ function game(levelIndex) {
         // Si le joueur attrape l'objet
         if(by === canvas.height - paddleHeight - 15 && x < paddleX + paddleWidth){
             itemDropped = false;
-            activeItems.push(item);
+            activeItems[item.name] = item;
             paddleColor = "red"
         }
         // Si l'objet n'est pas attrapé
@@ -280,23 +323,35 @@ function game(levelIndex) {
             for(let r=0; r<brickRowCount; r++) {
                 let b = bricks[c][r];
                 if(b.status === 1) {
-                    if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
+                     if (launchedAmmo.length > 0){
+                        for (let a = 0; a < launchedAmmo.length; a++){
+                            if (launchedAmmo[a].rightAmmoX > b.x && launchedAmmo[a].rightAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
+                                launchedAmmo[a].rightAmmoX = -100;
+                                b.status = 0;
+                                scoreUp();
+                            } else if (launchedAmmo[a].leftAmmoX > b.x && launchedAmmo[a].leftAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
+                                launchedAmmo[a].leftAmmoX = -100;
+                                b.status = 0;
+                                scoreUp();
+                            }
+                        }
+                    }
+                    if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight ) {
+                        b.status = 0;
                         directions.dy = -directions.dy;
-                        b.status      = 0;
                         scoreUp();
-                        // Si la brique contient un bonus
-                        if (b.bonus) {
-                            itemDropped = true;
-                            // Definis le centre de la brique et récupère l'objet
-                            bx                = (b.x + (brickWidth/2))-15;
-                            by                = (b.y + (brickHeight/2))-15;
-                            item              = b.object;
-                        }
-                        // Niveau terminé
-                        if(brokenBricks === brickRowCount*brickColumnCount) {
-                            levelIndex++;
-                            game(levelIndex);
-                        }
+                    }
+                    // Si la brique contient un bonus
+                    if (b.bonus) {
+                        itemDropped       = true;
+                        bx                = (b.x + (brickWidth/2))-15;
+                        by                = (b.y + (brickHeight/2))-15;
+                        item              = b.object;
+                    }
+                    // Niveau terminé
+                    if(brokenBricks === brickRowCount*brickColumnCount) {
+                        levelIndex++;
+                        game(levelIndex);
                     }
                 }
             }
@@ -309,36 +364,25 @@ function game(levelIndex) {
             directions.dy = oldDir.dy;
             gamePaused    = false;
         }else{
-            // Copy the ancient directions
             oldDir        = JSON.parse(JSON.stringify(directions));
-            // Stop the ball
             directions.dx = 0;
             directions.dy = 0;
             gamePaused    = true;
         }
     }
 
-    function scoreUp() {
-        brokenBricks++;
-        if (activeItems.length > 0){
-            for (let o = 0; o < activeItems.length; o++) {
-                if (activeItems[o].name === 'multiplyScore') {
-                    return score += 2;
-                }
-            }
-        } else {
-            return score++;
-        }
-    }
+    function scoreUp() { brokenBricks++; activeItems['multiplyScore'] !== undefined ? score += 2 : score++;}
 
     function actionTimedItem(item){
         if (item.time !== 0){
-            item.action? item.action() : null;
-            item.time -= 1;
+            if (!gamePaused){
+                item.action? item.action() : null;
+                item.time -= 1;
+            }
         }else{
-            activeItems.pop();
+            delete activeItems[item.name];
             paddleColor = 'white';
-            item.reverseAction? item.reverseAction() : null;
+            item.reverseAction ? item.reverseAction() : null;
         }
     }
 
@@ -374,6 +418,30 @@ function game(levelIndex) {
             const relativeX = e.clientX - canvas.offsetLeft;
             if (relativeX > 0 && relativeX < canvas.width) {
                 paddleX = relativeX - paddleWidth / 2;
+            }
+        }
+    }
+
+    function launchHandler(e) {
+        if (e.code === "KeyE") {
+            if (isMagnetBall){
+                directions.dy = oldDir.dy;
+                directions.dx = oldDir.dx;
+                isMagnetBall  = false;
+            }
+        }
+    }
+
+    function fireHandler(e) {
+        if (e.code === "KeyW") {
+            if (isArmed){
+                let ammo = {
+                    'leftAmmoX'  : JSON.parse(JSON.stringify(paddleX-10)),
+                    'rightAmmoX' : JSON.parse(JSON.stringify(paddleX+paddleWidth+10)),
+                    'ammoY'      : JSON.parse(JSON.stringify(canvas.height-paddleHeight))
+                };
+                launchedAmmo.push(ammo);
+                hasFired = true;
             }
         }
     }
