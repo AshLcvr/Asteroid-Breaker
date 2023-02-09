@@ -1,4 +1,4 @@
-import {lifeUp,paddleWidth,modifyPaddleWidth,isArmed,fireLauncher} from './game.js';
+import {canvas,paddleWidth,ballArray,lifeUp,modifyPaddleWidth,fireLauncher,bigBall} from './game.js';
 
 export function createImageObject() {
     let bonusImageArray = [];
@@ -8,6 +8,20 @@ export function createImageObject() {
         bonusImageArray[item] = img;
     }
     return bonusImageArray;
+}
+
+export function createMultiBalls(max) {
+    console.log(ballArray[0])
+    for (let i = 0; i < max ; i++) {
+        ballArray.push({
+            ballRadius    : 10,
+            x             : ballArray[0].x+i,
+            y             : ballArray[0].y-i*2,
+            directions    : {dx : 5, dy : -5},
+            oldDirections : {oldDx  : 0, oldDy : 0},
+            copyDirections: function() {return JSON.parse(JSON.stringify(this.directions))},
+        })
+    }
 }
 
 export const bonusObject = {
@@ -46,16 +60,45 @@ export const bonusObject = {
     //     time : 1000,
     //     img : "assets/img/test.png",
     // },
-    'fireLauncher'  : {
-        name : 'fireLauncher',
-        text : "Fire Launcher ! Press Z",
-        time : 500,
-        img : "assets/img/test.png",
+    // 'fireLauncher'  : {
+    //     name : 'fireLauncher',
+    //     text : "Fire Launcher ! Press Z",
+    //     time : 500,
+    //     img : "assets/img/test.png",
+    //     action : () => {
+    //         fireLauncher(true)
+    //     },
+    //     reverseAction : () => {
+    //         fireLauncher(false)
+    //     }
+    // },
+    // 'slowBall' : {
+    //     name : 'slowBall',
+    //     text : 'Sloooow Ball',
+    //     time : 500,
+    //     img : 'assets/img/test.png',
+    //     action : () => {
+    //
+    //     }
+    // },
+    // 'bigBall' : {
+    //     name : 'bigBall',
+    //     text : 'BIG BALL ! ',
+    //     time : 1000,
+    //     img : 'assets/img/test.png',
+    //     action : () => {
+    //         bigBall(20)
+    //     },
+    //     reverseAction : () => {
+    //         bigBall(10)
+    //     }
+    // },
+    'multiBall' : {
+        name : 'multiBall',
+        text : 'MultiBall !!! ',
+        img : 'assets/img/test.png',
         action : () => {
-            fireLauncher(true)
-        },
-        reverseAction : () => {
-            fireLauncher(false)
+            createMultiBalls(5)
         }
-    }
+    },
 };

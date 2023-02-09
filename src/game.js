@@ -1,17 +1,26 @@
 // Level Constructor
 let levelIndex = 0;
+if (levelIndex !== 0){
+    levelIndex = localStorage.getItem('levelIndex')
+}
+console.log(localStorage)
 import { levelConstructorArray } from "./levelConstruct.js";
 
 // Canvas & Context
-const canvas           = document.getElementById("myCanvas");
+export const canvas    = document.getElementById("myCanvas");
 const ctx              = canvas.getContext("2d");
 
-// Ball
-const ballRadius       = 10;
-let x                  = canvas.width/2;
-let y                  = canvas.height-30;
-let directions         = {dx : 5, dy : -5};
-let oldDir             = JSON.parse(JSON.stringify(directions));
+// Ball(s)
+export let ballArray   = [];
+let ball = {
+    ballRadius    : 10,
+    x             : canvas.width/2,
+    y             : canvas.height-30,
+    directions    : {dx : 5, dy : -5},
+    oldDirections : {oldDx  : 0, oldDy : 0},
+    copyDirections: function() {return JSON.parse(JSON.stringify(this.directions))},
+};
+ballArray.push(ball);
 
 // Paddle
 let paddleHeight       = 15;
@@ -28,11 +37,13 @@ let gamePaused         = false;
 let itemDropped        = false;
 
 // Bonus
-import {bonusObject,createImageObject} from "./objects.js";
+import {bonusObject,createImageObject,createMultiBalls} from "./objects.js";
 export let lifeUp            = ()=>{ lives++ };
-export let modifyPaddleWidth = width => { paddleWidth = width };
-export let fireLauncher      = (boolean) => {  isArmed = boolean};
-export let isArmed       = false;
+export let modifyPaddleWidth = pWidth => { paddleWidth = pWidth };
+export let fireLauncher      = boolean => { isArmed = boolean};
+export let multiBall         = max => { createMultiBalls(max); };
+export let bigBall           = bRadius => { for (let i = 0; i < ballArray.length; i++){ballArray[i].ballRadius = bRadius}};
+export let isArmed           = false;
 let bx;
 let by;
 let item;
@@ -55,9 +66,9 @@ const brickBackground = new Image();
 brickBackground.src   = levelConstructorArray[levelIndex].brickBackground;
 
 // GAME !
-game(levelIndex);
+game();
 
-function game(levelIndex) {
+function game() {
 
     levelIndex > 0 ? pause() : null;
 
@@ -73,22 +84,33 @@ function game(levelIndex) {
         'Down'      : {type : "keydown" , function : keyDownHandler},
         'Mousemove' : {type : "mousemove" , function : mouseMoveHandler},
         'Space'     : {type : "keyup" , function : spaceBarHandler},
-        'Launch'    : {type : "keyup" , function : launchHandler},
-        'Fire'      : {type : "keyup" , function : fireHandler}
+        'Launch'    : {type : ["keyup","click"] , function : launchHandler},
+        'Fire'      : {type : ["keyup","click"] , function : fireHandler}
     };
 
-    for (let directionName in DirectionsInput){
-        let direction = DirectionsInput[directionName];
-        document.addEventListener(direction.type, direction.function, false);
+    document.addEventListener('DOMContentLoaded', addInputsListener, false)
+
+    function addInputsListener(){
+        for (let directionName in DirectionsInput){
+            let direction = DirectionsInput[directionName];
+            if (Array.isArray(direction.type)){
+                for (let i = 0; i < direction.type.length ; i++){
+                    document.addEventListener(direction.type[i], direction.function, false);
+                }
+            }else{
+                document.addEventListener(direction.type, direction.function, false);
+            }
+        }
     }
 
     // Functions
     function levelConstructor(){
         // Reset Paddle & Ball
         lives < 3 ? lives++ : null;
-        y                 = canvas.height-25;
+        ballArray[0].y    = canvas.height-25;
         paddleX           = (canvas.width-paddleWidth)/2;
         isMagnetBall      = true;
+        brokenBricks      = 0;
 
         // Setting props from imported array
         brickRowCount     = levelConstructorArray[levelIndex].brickRowCount;
@@ -146,19 +168,21 @@ function game(levelIndex) {
         drawLives();
         collisionDetection();
 
+        isArmed = true;
+
         if (itemDropped) {
-            drawItem(bx,by);
             if (!gamePaused){
+                drawItem(bx,by);
                 by  += 2;
             }
         }
         if (Object.keys(activeItems).length !== 0){
             for (let oneItem in activeItems){
                 let item   = activeItems[oneItem];
-                item.time !== null? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})();
+                item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})();
             }
         }
-        if (activeItems['fireLauncher'] !== undefined){
+        if (activeItems['fireLauncher'] !== undefined || isArmed){
             if (hasFired){
                 if (!gamePaused){
                     // Les projectiles s'effacent quand isArmed retourne à false
@@ -169,52 +193,68 @@ function game(levelIndex) {
             }
         }
         if (isMagnetBall){
-            x             = paddleX + paddleWidth/2;
-            directions.dx = 0;
-            directions.dy = 0;
+            for (let i = 0; i < ballArray.length; i++)
+            {
+                ballArray[i].x             = paddleX + paddleWidth/2;
+                ballArray[i].directions.dx = 0;
+                ballArray[i].directions.dy = 0;
+            }
         }
         if (gamePaused){
             drawPauseMenu();
         }
-        if(x + directions.dx > canvas.width-ballRadius || x + directions.dx < ballRadius) {
-            directions.dx = -directions.dx;
-        }
-        if(y + directions.dy < ballRadius) {
-            directions.dy = -directions.dy;
-        }
-        else if(y + directions.dy > canvas.height-ballRadius) {
-            if(x > paddleX && x < paddleX + paddleWidth) {
-                if (activeItems['magnetBall'] !== undefined){
-                    y -= 10;
-                    directions.dx = 0;
-                    directions.dy = 0;
-                    isMagnetBall = true
+
+        for (let i = 0; i < ballArray.length; i++){
+            // Ball movement
+            ballArray[i].x += ballArray[i].directions.dx;
+            ballArray[i].y += ballArray[i].directions.dy;
+            // Edge collision detection
+            if(ballArray[i].x + ballArray[i].directions.dx > canvas.width-ballArray[i].ballRadius || ballArray[i].x + ballArray[i].directions.dx < ballArray[i].ballRadius) {
+                ballArray[i].directions.dx = -ballArray[i].directions.dx;
+            }
+            if(ballArray[i].y + ballArray[i].directions.dy < ballArray[i].ballRadius) {
+                ballArray[i].directions.dy = -ballArray[i].directions.dy;
+            }
+            else if(ballArray[i].y + ballArray[i].directions.dy > canvas.height-ballArray[i].ballRadius) {
+                // Low Edge Detection
+                // If ball touch paddle
+                if(ballArray[i].x > paddleX && ballArray[i].x < paddleX + paddleWidth) {
+                    if (activeItems['magnetBall'] !== undefined){
+                        ballArray[i].y -= 10;
+                        ballArray[i].directions.dx = 0;
+                        ballArray[i].directions.dy = 0;
+                        isMagnetBall               = true
+                    } else {
+                        ballArray[i].directions.dy = -ballArray[i].directions.dy;
+                    }
                 } else {
-                    directions.dy = -directions.dy;
-                }
-            } else {
-                lives--;
-                if(!lives) {
-                    alert("GAME OVER");
-                    document.location.reload();
-                }
-                else {
-                    x             = canvas.width/2;
-                    y             = canvas.height-30;
-                    directions.dx = 5;
-                    directions.dy = -5;
-                    paddleX       = (canvas.width-paddleWidth)/2;
+                    // If ball falls
+                    if (ballArray.length > 1){
+                        ballArray.splice(i,1)
+                    }
+                    else {
+                        lives--;
+                        ballArray[i].x             = canvas.width/2;
+                        ballArray[i].y             = canvas.height-30;
+                        ballArray[i].directions.dx = 5;
+                        ballArray[i].directions.dy = -5;
+                        paddleX                    = (canvas.width-paddleWidth)/2;
+                        isMagnetBall               = true;
+                    }
+                    if(!lives) {
+                        alert("GAME OVER");
+                        document.location.reload();
+                    }
                 }
             }
         }
+        // Keyboard arrow movement
         if(rightPressed && paddleX < canvas.width-paddleWidth) {
             paddleX += 7;
         }
         else if(leftPressed && paddleX > 0) {
             paddleX -= 7;
         }
-        x += directions.dx;
-        y += directions.dy;
         requestAnimationFrame(draw);
     }
 
@@ -244,11 +284,13 @@ function game(levelIndex) {
     }
 
     function drawBall() {
-        ctx.beginPath();
-        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
-        ctx.fillStyle = "#dd2e2f";
-        ctx.fill();
-        ctx.closePath();
+        for (let i = 0; i < ballArray.length; i++){
+            ctx.beginPath();
+            ctx.arc(ballArray[i].x, ballArray[i].y, ballArray[i].ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#dd2e2f";
+            ctx.fill();
+            ctx.closePath();
+        }
     }
 
     function drawPaddle(paddleColor) {
@@ -273,11 +315,11 @@ function game(levelIndex) {
     }
 
     function drawFireAnimation(activeAmmo){
-        activeAmmo.ammoY -= 2;
+        activeAmmo.ammoY -= 12;
         ctx.beginPath();
-        ctx.arc(activeAmmo.leftAmmoX, activeAmmo.ammoY, ballRadius, 0, Math.PI*2);
-        ctx.arc(activeAmmo.rightAmmoX, activeAmmo.ammoY, ballRadius, 0, Math.PI*2);
-        ctx.fillStyle = 'blue';
+        ctx.arc(activeAmmo.leftAmmoX, activeAmmo.ammoY, 7, 0, Math.PI*2);
+        ctx.arc(activeAmmo.rightAmmoX, activeAmmo.ammoY, 7, 0, Math.PI*2);
+        ctx.fillStyle = 'cyan';
         ctx.fill();
         ctx.closePath();
     }
@@ -285,11 +327,12 @@ function game(levelIndex) {
     function drawItem(bx,by) {
         ctx.beginPath();
         ctx.rect(bx,by,20,20);
-        ctx.fillStyle = ctx.createPattern(imageArray[item.name],'repeat');
+        // ctx.fillStyle = ctx.createPattern(imageArray[item.name],'repeat');
+        ctx.fillStyle = 'gold';
         ctx.fill();
         ctx.closePath();
         // Si le joueur attrape l'objet
-        if(by === canvas.height - paddleHeight - 15 && x < paddleX + paddleWidth){
+        if(by === canvas.height - paddleHeight - 15 && bx < paddleX + paddleWidth){
             itemDropped = false;
             activeItems[item.name] = item;
             paddleColor = "red"
@@ -336,11 +379,13 @@ function game(levelIndex) {
                             }
                         }
                     }
-                    if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight ) {
-                        b.status = 0;
-                        directions.dy = -directions.dy;
-                        scoreUp();
-                    }
+                     for (let i = 0; i < ballArray.length; i++){
+                         if(ballArray[i].x > b.x && ballArray[i].x < b.x+brickWidth && ballArray[i].y > b.y && ballArray[i].y < b.y+brickHeight) {
+                             b.status = 0;
+                             ballArray[i].directions.dy = -ballArray[i].directions.dy;
+                             scoreUp();
+                         }
+                     }
                     // Si la brique contient un bonus
                     if (b.bonus) {
                         itemDropped       = true;
@@ -350,8 +395,17 @@ function game(levelIndex) {
                     }
                     // Niveau terminé
                     if(brokenBricks === brickRowCount*brickColumnCount) {
-                        levelIndex++;
-                        game(levelIndex);
+                        levelIndex += 1;
+                        console.log(levelIndex)
+                        window.onload = function() {
+                            localStorage.clear();
+                            localStorage.removeItem("levelIndex")
+                            localStorage.setItem("levelIndex","1");
+                        }
+                        console.log(localStorage)
+                        debugger
+                        window.location.reload()
+                        // game();
                     }
                 }
             }
@@ -360,18 +414,26 @@ function game(levelIndex) {
 
     function pause(){
         if (gamePaused){
-            directions.dx = oldDir.dx;
-            directions.dy = oldDir.dy;
-            gamePaused    = false;
+            for (let i = 0; i < ballArray.length; i++) {
+                ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
+                ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy;
+            }
+            gamePaused = false;
         }else{
-            oldDir        = JSON.parse(JSON.stringify(directions));
-            directions.dx = 0;
-            directions.dy = 0;
+            for (let i = 0; i < ballArray.length; i++) {
+                let old = ballArray[i].copyDirections();
+                // Copy balls directions
+                ballArray[i].oldDirections.oldDx = old.dx;
+                ballArray[i].oldDirections.oldDy = old.dy;
+                //Stop the balls
+                ballArray[i].directions.dx = 0;
+                ballArray[i].directions.dy = 0;
+            }
             gamePaused    = true;
         }
     }
 
-    function scoreUp() { brokenBricks++; activeItems['multiplyScore'] !== undefined ? score += 2 : score++;}
+    function scoreUp() { brokenBricks++; activeItems['multiplyScore'] !== undefined ? score += 2 : score++; }
 
     function actionTimedItem(item){
         if (item.time !== 0){
@@ -414,6 +476,7 @@ function game(levelIndex) {
     }
 
     function mouseMoveHandler(e) {
+        console.log(e)
         if (!gamePaused) {
             const relativeX = e.clientX - canvas.offsetLeft;
             if (relativeX > 0 && relativeX < canvas.width) {
@@ -423,17 +486,27 @@ function game(levelIndex) {
     }
 
     function launchHandler(e) {
-        if (e.code === "KeyE") {
+        if (e.code === "KeyE" && !gamePaused) {
             if (isMagnetBall){
-                directions.dy = oldDir.dy;
-                directions.dx = oldDir.dx;
-                isMagnetBall  = false;
+                for (let i = 0 ; i < ballArray.length; i++){
+                    let old = ballArray[i].copyDirections();
+                    ballArray[i].oldDirections.oldDx = old.dx;
+                    ballArray[i].oldDirections.oldDy = old.dy;
+                    if (ballArray[i].oldDirections.oldDy !== 0){
+                        ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy = old.dy;
+                        ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
+                    }else{
+                        ballArray[i].directions.dy = -5 - i;
+                        ballArray[i].directions.dx = 5 + i;
+                    }
+                    isMagnetBall  = false;
+                }
             }
         }
     }
 
     function fireHandler(e) {
-        if (e.code === "KeyW") {
+        if (e.code === "KeyW" && !gamePaused) {
             if (isArmed){
                 let ammo = {
                     'leftAmmoX'  : JSON.parse(JSON.stringify(paddleX-10)),

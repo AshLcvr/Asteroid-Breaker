@@ -12,7 +12,7 @@ export const levelConstructorArray =
             brickOffsetLeft  : 140,
         },
         {
-            canvasBackground :"assets/img/hd-wallpaper-2675322_1280.jpg",
+            canvasBackground : "assets/img/background_level1.jpg",
             brickBackground  : "assets/img/brick2.jpg",
             brickRowCount    : 8,
             brickColumnCount : 5,
