@@ -1,29 +1,7 @@
-import {lifeUp,paddleWidth,modifyPaddleWidth} from './game.js';
+import {canvas,paddleWidth,ballArray,lifeUp,modifyPaddleWidth,fireLauncher,bigBall} from './game.js';
 
-function animate(canvas2,x2,y2,img,ctx2) {
-    ctx2.clearRect(0, 0, canvas2.width, canvas2.height);  // clear canvas
-    ctx2.drawImage(img, x2, y2);                       // draw image at current position
-    x2 -= 4;
-    if (x2 > 250) requestAnimationFrame(animate)        // loop
-}
-//
-export const createBonus = (img_url,bx,by) => {
-        let canvas2 = document.getElementById('imageObject'),
-        ctx2 = canvas2.getContext("2d");
-        ctx2.rect(bx, by, 30,300);
-        canvas2.style.backgroundImage = 'url('+img_url+')'
-        canvas2.style.backgroundRepeat = 'no-repeat'
-        canvas2.style.backgroundPosition = 'center'
-        // img.onload = animate(canvas2,x2,y2,img,ctx2);
-        // let img = new Image();
-        //
-        // img.src    = img_url;
-
-        return canvas2;
-};
-
-export const bonusArray = [
-    {
+export const bonusObject = {
+        'life' : {
         name   : 'life',
         text   : "+1 VIE",
         time   : null,
@@ -31,12 +9,13 @@ export const bonusArray = [
         action : () => {
             lifeUp();
         },
+        position : {bx : 0,by : 0}
     },
-    {
-        name   : 'bigPaddle' ,
-        text   : "BIG PADDLE",
-        time   : 2000,
-        img    : "assets/img/item/gold_heart.png",
+     'bigPaddle' : {
+         name   : 'bigPaddle',
+         text   : "BIG PADDLE",
+        time   : 1000,
+        img    : "assets/img/brick.jpg",
         action : () => {
             if (paddleWidth !== 85*2 ){
                 modifyPaddleWidth(paddleWidth*2)
@@ -44,6 +23,91 @@ export const bonusArray = [
         },
         reverseAction : () => {
             modifyPaddleWidth(85)
-        }
+        },
+         position : {bx : 0,by : 0}
+     },
+     'multiplyScore' :{
+         name   : 'multiplyScore',
+         text   : "Score X2",
+         time   : 200,
+         img    : "assets/img/brick.jpg",
+         position : {bx : 0,by : 0}
+     },
+    'magnetBall'  : {
+        name : 'magnetBall',
+        text : "Magnetic Ball",
+        time : 1000,
+        img : "assets/img/brick.jpg",
+        position : {bx : 0,by : 0}
+
+    },
+    'fireLauncher'  : {
+        name : 'fireLauncher',
+        text : "Fire Launcher ! Press Z",
+        time : 500,
+        img : "assets/img/brick.jpg",
+        action : () => {
+            fireLauncher(true)
+        },
+        reverseAction : () => {
+            fireLauncher(false)
+        },
+        position : {bx : 0,by : 0}
+
+    },
+    // 'slowBall' : {
+    //     name : 'slowBall',
+    //     text : 'Sloooow Ball',
+    //     time : 500,
+    //     img : 'assets/img/brick.jpg',
+    //     action : () => {
+    //
+    //     }
+    // },
+    'bigBall' : {
+        name : 'bigBall',
+        text : 'BIG BALL ! ',
+        time : 1000,
+        img : 'assets/img/brick.jpg',
+        action : () => {
+            bigBall(20)
+        },
+        reverseAction : () => {
+            bigBall(10)
+        },
+        position : {bx : 0,by : 0}
+
+    },
+    'multiBall' : {
+        name : 'multiBall',
+        text : 'MultiBall !!! ',
+        img : 'assets/img/brick.jpg',
+        action : () => {
+            createMultiBalls(5)
+        },
+        position : {bx : 0,by : 0}
     }
-];
+};
+
+createImageObject();
+
+export function createImageObject() {
+    for (let item in bonusObject){
+        let img = new Image();
+        img.src = bonusObject[item].img;
+        bonusObject[item].img = img;
+    }
+}
+
+export function createMultiBalls(max) {
+    for (let i = 0; i < max ; i++) {
+        ballArray.push({
+            ballRadius    : 10,
+            x             : ballArray[0].x+i,
+            y             : ballArray[0].y-i*2,
+            directions    : {dx : 5, dy : -5},
+            oldDirections : {oldDx  : 0, oldDy : 0},
+            copyDirections: function() {return JSON.parse(JSON.stringify(this.directions))},
+        })
+    }
+}

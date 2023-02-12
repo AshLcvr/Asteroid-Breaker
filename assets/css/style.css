@@ -8,18 +8,23 @@
     margin: 0;
 }
 
-#myCanvas {
+.level0 {
+     display: block;
+     margin: 0 auto;
+     background-image: url("../img/background_level1.jpg");
+     background-position: center;
+ }
+
+.level1 {
     display: block;
     margin: 0 auto;
-    background-image: url("../img/background_level1.jpg");
+    background-image: url("../img/hd-wallpaper-2675322_1280.jpg");
     background-position: center;
 }
 
-
-/*#imageObject {*/
-/*    display: block;*/
-/*    margin: 0 auto;*/
-/*    background-image : url("../img/item/gold_heart.png");*/
-/*    background-position: center;*/
-/*}*/
-
+.level2 {
+    display: block;
+    margin: 0 auto;
+    background-image: url("../img/hd-wallpaper-2675322_1280.jpg");
+    background-position: center;
+}
