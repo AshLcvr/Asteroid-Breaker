@@ -1,18 +1,15 @@
-// Level Constructor
-let levelIndex = 0;
-if (levelIndex !== 0){
-    levelIndex = localStorage.getItem('levelIndex')
-}
-console.log(localStorage)
-import { levelConstructorArray } from "./levelConstruct.js";
-
 // Canvas & Context
 export const canvas    = document.getElementById("myCanvas");
 const ctx              = canvas.getContext("2d");
 
+// Level Constructor
+let canvasClass = canvas.classList[0];
+let levelIndex  = canvasClass[5];
+import { levelConstructorArray } from "./levelConstruct.js";
+
 // Ball(s)
 export let ballArray   = [];
-let ball = {
+let ball               = {
     ballRadius    : 10,
     x             : canvas.width/2,
     y             : canvas.height-30,
@@ -34,22 +31,18 @@ let leftPressed        = false;
 let score              = 0;
 let lives              = 3;
 let gamePaused         = false;
-let itemDropped        = false;
 
 // Bonus
-import {bonusObject,createImageObject,createMultiBalls} from "./objects.js";
+import {bonusObject,createMultiBalls} from "./objects.js";
 export let lifeUp            = ()=>{ lives++ };
 export let modifyPaddleWidth = pWidth => { paddleWidth = pWidth };
 export let fireLauncher      = boolean => { isArmed = boolean};
 export let multiBall         = max => { createMultiBalls(max); };
 export let bigBall           = bRadius => { for (let i = 0; i < ballArray.length; i++){ballArray[i].ballRadius = bRadius}};
 export let isArmed           = false;
-let bx;
-let by;
-let item;
+let droppedItems = [];
 let activeItems  = {};
-let imageArray   = createImageObject();
-let isMagnetBall = false;
+let isMagnetBall = true;
 let hasFired     = false;
 let launchedAmmo = [];
 
@@ -61,20 +54,17 @@ let brickHeight;
 let brickPadding;
 let brickOffsetTop;
 let brickOffsetLeft;
+let bricks            = [];
 let brokenBricks      = 0;
-const brickBackground = new Image();
-brickBackground.src   = levelConstructorArray[levelIndex].brickBackground;
 
 // GAME !
 game();
 
 function game() {
-
+    let actualLevel = levelConstructorArray[levelIndex];
     levelIndex > 0 ? pause() : null;
-
     levelConstructor();
-
-    let bricks = brickConstructor();
+    bricks = brickConstructor();
 
     draw();
 
@@ -105,26 +95,22 @@ function game() {
 
     // Functions
     function levelConstructor(){
-        // Reset Paddle & Ball
-        lives < 3 ? lives++ : null;
-        ballArray[0].y    = canvas.height-25;
-        paddleX           = (canvas.width-paddleWidth)/2;
-        isMagnetBall      = true;
-        brokenBricks      = 0;
-
         // Setting props from imported array
-        brickRowCount     = levelConstructorArray[levelIndex].brickRowCount;
-        brickColumnCount  = levelConstructorArray[levelIndex].brickColumnCount;
-        brickWidth        = levelConstructorArray[levelIndex].brickWidth;
-        brickHeight       = levelConstructorArray[levelIndex].brickHeight;
-        brickPadding      = levelConstructorArray[levelIndex].brickPadding;
-        brickOffsetTop    = levelConstructorArray[levelIndex].brickOffsetTop;
-        brickOffsetLeft   = levelConstructorArray[levelIndex].brickOffsetLeft;
+        brickRowCount     = actualLevel.brickRowCount;
+        brickColumnCount  = actualLevel.brickColumnCount;
+        brickWidth        = actualLevel.brickWidth;
+        brickHeight       = actualLevel.brickHeight;
+        brickPadding      = actualLevel.brickPadding;
+        brickOffsetTop    = actualLevel.brickOffsetTop;
+        brickOffsetLeft   = actualLevel.brickOffsetLeft;
     }
 
-    function randomIntBonusBrick(row,column){
-        // return Math.floor(Math.random() * (row*column));
-        return 40;
+    function randomIntBonusBricks(row,column){
+        let randomIntBonusBricks = [];
+        for (let i = 0; i <= actualLevel.nbBonusBrick; i++){
+           randomIntBonusBricks[i] = (Math.floor(Math.random() * (row*column)))
+        }
+        return randomIntBonusBricks ;
     }
 
     function randomObjectBonus(bonusObject) {
@@ -134,25 +120,24 @@ function game() {
     }
 
     function brickConstructor() {
-        let bricks      = [];
         let brickNumber = 0;
-        let bonusBrick  = randomIntBonusBrick(brickRowCount,brickColumnCount);
+        let bonusBricks = randomIntBonusBricks(brickRowCount,brickColumnCount);
 
         for(let c=0; c<brickColumnCount; c++) {
             bricks[c] = [];
             for(let r=0; r<brickRowCount; r++) {
                 brickNumber++;
-                if (brickNumber === bonusBrick)
-                {
+                if (bonusBricks.includes(brickNumber)) {
                     bricks[c][r] = {
-                        x      : 0,
-                        y      : 0,
-                        status : 1,
-                        number : brickNumber,
-                        bonus  : true,
-                        object : randomObjectBonus(bonusObject)}
-                }else{
-                    bricks[c][r] = {x: 0, y: 0, status: 1, number: brickNumber, bonus : false };
+                        x: 0,
+                        y: 0,
+                        status: 1,
+                        number: brickNumber,
+                        bonus : true,
+                        object: randomObjectBonus(bonusObject)
+                    }
+                } else {
+                    bricks[c][r] = {x: 0, y: 0, status: 1, number: brickNumber, bonus: false};
                 }
             }
         }
@@ -170,16 +155,17 @@ function game() {
 
         isArmed = true;
 
-        if (itemDropped) {
-            if (!gamePaused){
-                drawItem(bx,by);
-                by  += 2;
+        if (droppedItems.length > 0 && !gamePaused){
+            for (let i = 0; i<droppedItems.length;i++){
+                let item = droppedItems[i];
+                drawItem(item);
+                item.position.by  += 2;
             }
         }
         if (Object.keys(activeItems).length !== 0){
-            for (let oneItem in activeItems){
-                let item   = activeItems[oneItem];
-                item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})();
+            for (let itemIndex in activeItems){
+                let item   = activeItems[itemIndex];
+                item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})() ;
             }
         }
         if (activeItems['fireLauncher'] !== undefined || isArmed){
@@ -251,8 +237,7 @@ function game() {
         // Keyboard arrow movement
         if(rightPressed && paddleX < canvas.width-paddleWidth) {
             paddleX += 7;
-        }
-        else if(leftPressed && paddleX > 0) {
+        } else if(leftPressed && paddleX > 0) {
             paddleX -= 7;
         }
         requestAnimationFrame(draw);
@@ -273,7 +258,7 @@ function game() {
                     if (bricks[c][r].bonus){
                         ctx.fillStyle = "gold";
                     }else{
-                        ctx.fillStyle =  ctx.createPattern(brickBackground,'repeat');
+                        ctx.fillStyle =  ctx.createPattern(actualLevel.brickBackground,'repeat');
                     }
                     ctx.fill();
                     ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
@@ -297,7 +282,7 @@ function game() {
         if (isArmed){
             ctx.beginPath();
             ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
-            ctx.fillStyle = 'pink';
+            ctx.fillStyle = paddleColor;
             ctx.fill();
             ctx.closePath();
             ctx.beginPath();
@@ -324,22 +309,28 @@ function game() {
         ctx.closePath();
     }
 
-    function drawItem(bx,by) {
+    function drawFallingItem(b) {
+        b.object.position.bx = (b.x + (brickWidth/2))-15;
+        b.object.position.by = (b.y + (brickHeight/2))-15;
+        droppedItems.push(b.object)
+    }
+
+    function drawItem(item) {
         ctx.beginPath();
-        ctx.rect(bx,by,20,20);
-        // ctx.fillStyle = ctx.createPattern(imageArray[item.name],'repeat');
-        ctx.fillStyle = 'gold';
+        ctx.rect(item.position.bx,item.position.by,20,20);
+        ctx.fillStyle = ctx.createPattern(item.img,'repeat');
         ctx.fill();
         ctx.closePath();
         // Si le joueur attrape l'objet
-        if(by === canvas.height - paddleHeight - 15 && bx < paddleX + paddleWidth){
-            itemDropped = false;
+        if(item.position.by === canvas.height - paddleHeight - 15 && item.position.bx  < paddleX + paddleWidth){
             activeItems[item.name] = item;
-            paddleColor = "red"
+            paddleColor = "red";
+            droppedItems.splice(droppedItems.indexOf(item),1);
         }
         // Si l'objet n'est pas attrapé
-        if(by === canvas.height ){
-            itemDropped = false;
+        if(item.position.by === canvas.height ){
+            droppedItems.splice(droppedItems.indexOf(item),1);
+            console.log(droppedItems)
         }
     }
 
@@ -364,18 +355,23 @@ function game() {
     function collisionDetection() {
         for(let c=0; c<brickColumnCount; c++) {
             for(let r=0; r<brickRowCount; r++) {
+                levelIndex === 1 ? (() => {bricks < 30 ? console.log(b) : null })() : null;
                 let b = bricks[c][r];
                 if(b.status === 1) {
                      if (launchedAmmo.length > 0){
                         for (let a = 0; a < launchedAmmo.length; a++){
                             if (launchedAmmo[a].rightAmmoX > b.x && launchedAmmo[a].rightAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
-                                launchedAmmo[a].rightAmmoX = -100;
+                                launchedAmmo.splice(a,1);
                                 b.status = 0;
                                 scoreUp();
+                                b.bonus? drawFallingItem(b) : null;
                             } else if (launchedAmmo[a].leftAmmoX > b.x && launchedAmmo[a].leftAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
-                                launchedAmmo[a].leftAmmoX = -100;
+                                launchedAmmo.splice(a,1);
                                 b.status = 0;
                                 scoreUp();
+                                b.bonus? drawFallingItem(b) : null;
+                            } else if (launchedAmmo[a].ammoY < 0){
+                                launchedAmmo.splice(a,1)
                             }
                         }
                     }
@@ -384,32 +380,33 @@ function game() {
                              b.status = 0;
                              ballArray[i].directions.dy = -ballArray[i].directions.dy;
                              scoreUp();
+                             b.bonus? drawFallingItem(b) : null;
                          }
                      }
-                    // Si la brique contient un bonus
-                    if (b.bonus) {
-                        itemDropped       = true;
-                        bx                = (b.x + (brickWidth/2))-15;
-                        by                = (b.y + (brickHeight/2))-15;
-                        item              = b.object;
-                    }
-                    // Niveau terminé
+                    // Level Completed
                     if(brokenBricks === brickRowCount*brickColumnCount) {
-                        levelIndex += 1;
-                        console.log(levelIndex)
-                        window.onload = function() {
-                            localStorage.clear();
-                            localStorage.removeItem("levelIndex")
-                            localStorage.setItem("levelIndex","1");
-                        }
-                        console.log(localStorage)
-                        debugger
-                        window.location.reload()
-                        // game();
+                        canvas.classList.remove("level"+levelIndex);
+                        levelIndex++;
+                        canvas.classList.toggle("level"+levelIndex);
+                        gameReset();
+                        game();
                     }
                 }
             }
         }
+    }
+
+    function gameReset() {
+        // Reset Paddle & Ball
+        lives < 3 || levelIndex === 2  ? lives++ : null;
+        ballArray[0].y    = canvas.height-25;
+        ballArray[0].directions.dx    = 0;
+        ballArray[0].directions.dy    = 0;
+        paddleX           = (canvas.width-paddleWidth)/2;
+        isMagnetBall      = true;
+        brokenBricks      = 0;
+        bricks            = [];
+        launchedAmmo      = [];
     }
 
     function pause(){
@@ -433,10 +430,13 @@ function game() {
         }
     }
 
-    function scoreUp() { brokenBricks++; activeItems['multiplyScore'] !== undefined ? score += 2 : score++; }
+    function scoreUp() {
+        brokenBricks++;
+        activeItems['multiplyScore'] !== undefined ? score += 2 : score++;
+    }
 
     function actionTimedItem(item){
-        if (item.time !== 0){
+        if (item.time !== 1){
             if (!gamePaused){
                 item.action? item.action() : null;
                 item.time -= 1;
@@ -476,7 +476,6 @@ function game() {
     }
 
     function mouseMoveHandler(e) {
-        console.log(e)
         if (!gamePaused) {
             const relativeX = e.clientX - canvas.offsetLeft;
             if (relativeX > 0 && relativeX < canvas.width) {
