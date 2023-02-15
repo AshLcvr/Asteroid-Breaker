@@ -6,6 +6,16 @@ const ctx              = canvas.getContext("2d");
 let canvasClass = canvas.classList[0];
 let levelIndex  = canvasClass[5];
 import { levelConstructorArray } from "./levelConstruct.js";
+// Bricks
+let brickRowCount;
+let brickColumnCount;
+let brickWidth;
+let brickHeight;
+let brickPadding;
+let brickOffsetTop;
+let brickOffsetLeft;
+let bricks            = [];
+let brokenBricks      = 0;
 
 // Ball(s)
 export let ballArray   = [];
@@ -33,29 +43,17 @@ let lives              = 3;
 let gamePaused         = false;
 
 // Bonus
-import {bonusObject,createMultiBalls} from "./objects.js";
+import {bonusObject} from "./objects.js";
 export let lifeUp            = ()=>{ lives++ };
 export let modifyPaddleWidth = pWidth => { paddleWidth = pWidth };
 export let fireLauncher      = boolean => { isArmed = boolean};
-export let multiBall         = max => { createMultiBalls(max); };
 export let bigBall           = bRadius => { for (let i = 0; i < ballArray.length; i++){ballArray[i].ballRadius = bRadius}};
-export let isArmed           = false;
+let isMagnetBall = true;
+let isArmed      = false;
 let droppedItems = [];
 let activeItems  = {};
-let isMagnetBall = true;
 let hasFired     = false;
 let launchedAmmo = [];
-
-// Bricks
-let brickRowCount;
-let brickColumnCount;
-let brickWidth;
-let brickHeight;
-let brickPadding;
-let brickOffsetTop;
-let brickOffsetLeft;
-let bricks            = [];
-let brokenBricks      = 0;
 
 // GAME !
 game();
@@ -330,7 +328,6 @@ function game() {
         // Si l'objet n'est pas attrapé
         if(item.position.by === canvas.height ){
             droppedItems.splice(droppedItems.indexOf(item),1);
-            console.log(droppedItems)
         }
     }
 
@@ -361,12 +358,12 @@ function game() {
                      if (launchedAmmo.length > 0){
                         for (let a = 0; a < launchedAmmo.length; a++){
                             if (launchedAmmo[a].rightAmmoX > b.x && launchedAmmo[a].rightAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
-                                launchedAmmo.splice(a,1);
+                                delete launchedAmmo[a].rightAmmoX
                                 b.status = 0;
                                 scoreUp();
                                 b.bonus? drawFallingItem(b) : null;
                             } else if (launchedAmmo[a].leftAmmoX > b.x && launchedAmmo[a].leftAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
-                                launchedAmmo.splice(a,1);
+                                delete launchedAmmo[a].leftAmmoX
                                 b.status = 0;
                                 scoreUp();
                                 b.bonus? drawFallingItem(b) : null;

@@ -1,9 +1,9 @@
-import {canvas,paddleWidth,ballArray,lifeUp,modifyPaddleWidth,fireLauncher,bigBall} from './game.js';
+import {paddleWidth,ballArray,lifeUp,modifyPaddleWidth,fireLauncher,bigBall} from './game.js';
 
 export const bonusObject = {
         'life' : {
         name   : 'life',
-        text   : "+1 VIE",
+        text   : "+1 LIFE",
         time   : null,
         img    : "assets/img/item/gold_heart.png",
         action : () => {
@@ -33,17 +33,9 @@ export const bonusObject = {
          img    : "assets/img/brick.jpg",
          position : {bx : 0,by : 0}
      },
-    'magnetBall'  : {
-        name : 'magnetBall',
-        text : "Magnetic Ball",
-        time : 1000,
-        img : "assets/img/brick.jpg",
-        position : {bx : 0,by : 0}
-
-    },
     'fireLauncher'  : {
         name : 'fireLauncher',
-        text : "Fire Launcher ! Press Z",
+        text : "Fire Launcher ! Press Z to fire",
         time : 500,
         img : "assets/img/brick.jpg",
         action : () => {
@@ -55,18 +47,17 @@ export const bonusObject = {
         position : {bx : 0,by : 0}
 
     },
-    // 'slowBall' : {
-    //     name : 'slowBall',
-    //     text : 'Sloooow Ball',
-    //     time : 500,
-    //     img : 'assets/img/brick.jpg',
-    //     action : () => {
-    //
-    //     }
-    // },
+    'magnetBall'  : {
+        name : 'magnetBall',
+        text : "Magnetic Ball",
+        time : 1000,
+        img : "assets/img/brick.jpg",
+        position : {bx : 0,by : 0}
+
+    },
     'bigBall' : {
         name : 'bigBall',
-        text : 'BIG BALL ! ',
+        text : 'BIG BALL',
         time : 1000,
         img : 'assets/img/brick.jpg',
         action : () => {
@@ -80,7 +71,7 @@ export const bonusObject = {
     },
     'multiBall' : {
         name : 'multiBall',
-        text : 'MultiBall !!! ',
+        text : 'MultiBall !!!',
         img : 'assets/img/brick.jpg',
         action : () => {
             createMultiBalls(5)
