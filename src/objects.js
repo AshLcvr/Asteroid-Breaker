@@ -45,15 +45,13 @@ export const bonusObject = {
             fireLauncher(false)
         },
         position : {bx : 0,by : 0}
-
     },
     'magnetBall'  : {
         name : 'magnetBall',
         text : "Magnetic Ball",
-        time : 1000,
+        time : 10000,
         img : "assets/img/brick.jpg",
         position : {bx : 0,by : 0}
-
     },
     'bigBall' : {
         name : 'bigBall',
@@ -67,7 +65,6 @@ export const bonusObject = {
             bigBall(10)
         },
         position : {bx : 0,by : 0}
-
     },
     'multiBall' : {
         name : 'multiBall',
