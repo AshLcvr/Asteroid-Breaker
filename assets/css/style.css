@@ -21,7 +21,7 @@ body{
 .level1 {
     display: block;
     margin: 0 auto;
-    background-image: url("../img/background_lvl0.jpg");
+    background-image: url("../img/background_level1.jpg");
     background-position: center;
 }
 .level2 {

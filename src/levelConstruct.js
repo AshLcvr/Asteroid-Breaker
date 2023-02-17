@@ -2,9 +2,9 @@ export const levelConstructorArray =
 [
     {
         brickBackground  : "assets/img/brick.jpg",
-        brickRowCount    : 7,
-        brickColumnCount : 8,
-        brickWidth       : 75,
+        brickRowCount    : 1,
+        brickColumnCount : 1,
+        brickWidth       : 750,
         brickHeight      : 30,
         brickPadding     : 10,
         brickOffsetTop   : 100,

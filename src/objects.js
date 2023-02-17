@@ -35,7 +35,7 @@ export const bonusObject = {
      },
     'fireLauncher'  : {
         name : 'fireLauncher',
-        text : "Fire Launcher ! Press Z to fire",
+        text : "Fire Launcher !",
         time : 500,
         img : "assets/img/brick.jpg",
         action : () => {

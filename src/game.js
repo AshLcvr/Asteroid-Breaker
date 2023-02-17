@@ -2,6 +2,9 @@
 const canvas = document.getElementById("myCanvas");
 const ctx    = canvas.getContext("2d");
 
+// Modals
+let isModalDisplayed = true;
+
 // Level Constructor
 let canvasClass = canvas.classList[0];
 let levelIndex  = canvasClass[5];
@@ -17,17 +20,6 @@ let brickOffsetLeft;
 let bricks            = [];
 let brokenBricks      = 0;
 
-// Modals & background
-
-console.log(levelConstructorArray[levelIndex].canvasBackground)
-ctx.beginPath();
-ctx.rect(20, -200, 15000, 10000);
-ctx.fillStyle = ctx.createPattern(levelConstructorArray[levelIndex].canvasBackground,'no-repeat');
-ctx.fill();
-ctx.closePath();
-
-let isModalDisplayed = true;
-
 // Ball(s)
 export let ballArray   = [];
 let ball               = {
@@ -42,8 +34,8 @@ ballArray.push(ball);
 let oldDir = {};
 
 // Paddle
-let paddleHeight       = 15;
 export let paddleWidth = 85;
+let paddleHeight       = 15;
 let paddleX            = (canvas.width-paddleWidth)/2;
 let paddleColor        = "#fff3fc";
 let rightPressed       = false;
@@ -60,10 +52,11 @@ export let lifeUp            = ()=>{ lives++ };
 export let modifyPaddleWidth = pWidth => { paddleWidth = pWidth };
 export let fireLauncher      = boolean => { isArmed = boolean};
 export let bigBall           = bRadius => { for (let i = 0; i < ballArray.length; i++){ballArray[i].ballRadius = bRadius}};
+let droppedItems = [];
+let isItemCaught = false;
+let activeItems  = {};
 let isMagnetBall = true;
 let isArmed      = false;
-let droppedItems = [];
-let activeItems  = {};
 let hasFired     = false;
 let launchedAmmo = [];
 
@@ -72,7 +65,7 @@ game();
 
 function game() {
     let actualLevel = levelConstructorArray[levelIndex];
-    levelIndex > 0 ? pause() : drawStartModal();
+    levelIndex > 0 ? drawLevelModal(levelIndex) : drawStartModal();
     levelConstructor();
     bricks = brickConstructor();
 
@@ -163,6 +156,7 @@ function game() {
         drawLives();
         collisionDetection();
         drawStartModal();
+        drawLevelModal(levelIndex);
 
         isArmed = true;
 
@@ -176,7 +170,14 @@ function game() {
         if (Object.keys(activeItems).length !== 0){
             for (let itemIndex in activeItems){
                 let item   = activeItems[itemIndex];
-                item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})() ;
+                drawObjectModal(item);
+                // item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})() ;
+                if(item.time){
+                    actionTimedItem(item)
+                }else{
+                    item.action();
+                    if (! isItemCaught){ delete activeItems[item.name];}
+                }
             }
         }
         if (activeItems['fireLauncher'] !== undefined || isArmed){
@@ -284,24 +285,55 @@ function game() {
         }
     }
 
+    console.log(levelIndex)
     function drawStartModal() {
-        if (isModalDisplayed){
+        if (isModalDisplayed && levelIndex < 1){
+            gamePaused = true;
             ctx.beginPath();
-            ctx.rect(canvas.width/5, canvas.height/5, 600, 300);
+            ctx.rect(220, 160, 520, 320);
+            ctx.fillStyle = "grey";
+            ctx.fill();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.rect(230, 170, 500, 300);
             ctx.fillStyle = "white";
             ctx.fill();
-            ctx.closePath()
+            ctx.closePath();
             ctx.font = "30px space";
             ctx.fillStyle = "black";
-            ctx.fillText("Welcome to Asteroid Breaker", canvas.width/4, canvas.height/4);
+            ctx.fillText("Welcome to Asteroid Breaker", 265 , 200);
             ctx.font = "16px arial";
             ctx.fillStyle = "black";
-            ctx.fillText("Our spaceship is trap in an asteroid belt!", canvas.width/4, (canvas.height/4)+32);
-            ctx.fillText("We need you to destroy them !", canvas.width/4, (canvas.height/4)+64);
-            ctx.fillText("Our spaceship is trap in an asteroid belt!", canvas.width/4, (canvas.height/3)+ 32);
+            ctx.fillText("Our spaceship is trap in an asteroid belt!", 265, 240);
+            ctx.fillText("We need you to destroy them !", 265, 264);
+            ctx.fillText("Here are your instructions :", 265, 312);
+            ctx.fillText("- Press E to launch the ball", 265, 336);
+            ctx.fillText("- If armed, press Z to fire", 265, 360);
+            ctx.fillText("- Press Spacebar to pause", 265, 384);
+            ctx.fillText("Click anywhere to start", 400, 432);
         }
     }
-    document.body.onclick = () => { return isModalDisplayed = false;}
+    document.body.onclick = () => { isModalDisplayed = false; gamePaused = false}
+
+    function drawObjectModal(item){
+        if (item.position.by > canvas.height/2 && isItemCaught) {
+            item.position.by -= 3;
+            ctx.font = "32px space";
+            ctx.fillStyle = "#f6fff4";
+            ctx.fillText(item.text, item.position.bx, item.position.by);
+        }else if(item.position.by <= canvas.height/2){
+            isItemCaught = false;
+        }
+    }
+
+    console.log(isModalDisplayed)
+    function drawLevelModal(levelIndex){
+        if (isModalDisplayed && levelIndex >= 1) {
+            ctx.font = "132px space";
+            ctx.fillStyle = "#f6fff4";
+            ctx.fillText("LEVEL "+levelIndex, 300, 350);
+        }
+    }
 
     function drawBall() {
         for (let i = 0; i < ballArray.length; i++){
@@ -359,7 +391,8 @@ function game() {
         // Si le joueur attrape l'objet
         if(item.position.by === canvas.height - paddleHeight - 15 && item.position.bx  < paddleX + paddleWidth){
             activeItems[item.name] = item;
-            paddleColor = "red";
+            paddleColor            = "red";
+            isItemCaught           = true;
             droppedItems.splice(droppedItems.indexOf(item),1);
         }
         // Si l'objet n'est pas attrapé
@@ -381,9 +414,11 @@ function game() {
     }
 
     function drawPauseMenu() {
-        ctx.font = "132px space";
-        ctx.fillStyle = "#f6fff4";
-        ctx.fillText("PAUSE", 300, 350);
+        if (! isModalDisplayed) {
+            ctx.font = "132px space";
+            ctx.fillStyle = "#f6fff4";
+            ctx.fillText("PAUSE", 300, 350);
+        }
     }
 
     function collisionDetection() {
@@ -395,12 +430,12 @@ function game() {
                      if (launchedAmmo.length > 0){
                         for (let a = 0; a < launchedAmmo.length; a++){
                             if (launchedAmmo[a].rightAmmoX > b.x && launchedAmmo[a].rightAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
-                                delete launchedAmmo[a].rightAmmoX
+                                delete launchedAmmo[a].rightAmmoX;
                                 b.status = 0;
                                 scoreUp();
                                 b.bonus? drawFallingItem(b) : null;
                             } else if (launchedAmmo[a].leftAmmoX > b.x && launchedAmmo[a].leftAmmoX < b.x+brickWidth && launchedAmmo[a].ammoY > b.y &&  launchedAmmo[a].ammoY  < b.y+brickHeight){
-                                delete launchedAmmo[a].leftAmmoX
+                                delete launchedAmmo[a].leftAmmoX;
                                 b.status = 0;
                                 scoreUp();
                                 b.bonus? drawFallingItem(b) : null;
@@ -441,28 +476,28 @@ function game() {
         brokenBricks      = 0;
         bricks            = [];
         launchedAmmo      = [];
+        isModalDisplayed  = true;
     }
 
     function pause(){
-        ballArray[0].directions.dy =   - ballArray[0].directions.dy
-        // if (gamePaused){
-        //     for (let i = 0; i < ballArray.length; i++) {
-        //         ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
-        //         ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy;
-        //     }
-        //     gamePaused = false;
-        // }else{
-        //     for (let i = 0; i < ballArray.length; i++) {
-        //         oldDir = ballArray[i].copyDirections();
-        //         // Copy balls directions
-        //         ballArray[i].oldDirections.oldDx = oldDir.dx;
-        //         ballArray[i].oldDirections.oldDy = oldDir.dy;
-        //         //Stop the balls
-        //         ballArray[i].directions.dx = 0;
-        //         ballArray[i].directions.dy = 0;
-        //     }
-        //     gamePaused    = true;
-        // }
+        if (gamePaused){
+            for (let i = 0; i < ballArray.length; i++) {
+                ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
+                ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy;
+            }
+            gamePaused = false;
+        }else{
+            for (let i = 0; i < ballArray.length; i++) {
+                oldDir = ballArray[i].copyDirections();
+                // Copy balls directions
+                ballArray[i].oldDirections.oldDx = oldDir.dx;
+                ballArray[i].oldDirections.oldDy = oldDir.dy;
+                //Stop the balls
+                ballArray[i].directions.dx = 0;
+                ballArray[i].directions.dy = 0;
+            }
+            gamePaused    = true;
+        }
     }
 
     function scoreUp() {
