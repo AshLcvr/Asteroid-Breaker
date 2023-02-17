@@ -1,6 +1,6 @@
 // Canvas & Context
-export const canvas    = document.getElementById("myCanvas");
-const ctx              = canvas.getContext("2d");
+const canvas = document.getElementById("myCanvas");
+const ctx    = canvas.getContext("2d");
 
 // Level Constructor
 let canvasClass = canvas.classList[0];
@@ -17,6 +17,17 @@ let brickOffsetLeft;
 let bricks            = [];
 let brokenBricks      = 0;
 
+// Modals & background
+
+console.log(levelConstructorArray[levelIndex].canvasBackground)
+ctx.beginPath();
+ctx.rect(20, -200, 15000, 10000);
+ctx.fillStyle = ctx.createPattern(levelConstructorArray[levelIndex].canvasBackground,'no-repeat');
+ctx.fill();
+ctx.closePath();
+
+let isModalDisplayed = true;
+
 // Ball(s)
 export let ballArray   = [];
 let ball               = {
@@ -28,6 +39,7 @@ let ball               = {
     copyDirections: function() {return JSON.parse(JSON.stringify(this.directions))},
 };
 ballArray.push(ball);
+let oldDir = {};
 
 // Paddle
 let paddleHeight       = 15;
@@ -60,7 +72,7 @@ game();
 
 function game() {
     let actualLevel = levelConstructorArray[levelIndex];
-    levelIndex > 0 ? pause() : null;
+    levelIndex > 0 ? pause() : drawStartModal();
     levelConstructor();
     bricks = brickConstructor();
 
@@ -150,6 +162,7 @@ function game() {
         drawScore();
         drawLives();
         collisionDetection();
+        drawStartModal();
 
         isArmed = true;
 
@@ -189,27 +202,32 @@ function game() {
         }
 
         for (let i = 0; i < ballArray.length; i++){
+            let ball = ballArray[i];
             // Ball movement
-            ballArray[i].x += ballArray[i].directions.dx;
-            ballArray[i].y += ballArray[i].directions.dy;
+            ball.x += ball.directions.dx;
+            ball.y += ball.directions.dy;
             // Edge collision detection
-            if(ballArray[i].x + ballArray[i].directions.dx > canvas.width-ballArray[i].ballRadius || ballArray[i].x + ballArray[i].directions.dx < ballArray[i].ballRadius) {
-                ballArray[i].directions.dx = -ballArray[i].directions.dx;
+            if(ball.x + ball.directions.dx > canvas.width-ball.ballRadius || ball.x + ball.directions.dx < ball.ballRadius) {
+                ball.directions.dx = -ball.directions.dx;
             }
-            if(ballArray[i].y + ballArray[i].directions.dy < ballArray[i].ballRadius) {
-                ballArray[i].directions.dy = -ballArray[i].directions.dy;
-            }
-            else if(ballArray[i].y + ballArray[i].directions.dy > canvas.height-ballArray[i].ballRadius) {
+            if(ball.y + ball.directions.dy < ball.ballRadius) {
+                ball.directions.dy = -ball.directions.dy;
+            } else if(ball.y + ball.directions.dy > canvas.height-ball.ballRadius) {
                 // Low Edge Detection
                 // If ball touch paddle
-                if(ballArray[i].x > paddleX && ballArray[i].x < paddleX + paddleWidth) {
-                    if (activeItems['magnetBall'] !== undefined){
-                        ballArray[i].y -= 10;
-                        ballArray[i].directions.dx = 0;
-                        ballArray[i].directions.dy = 0;
-                        isMagnetBall               = true
-                    } else {
-                        ballArray[i].directions.dy = -ballArray[i].directions.dy;
+                if(ball.x > paddleX && ball.x < paddleX + paddleWidth) {
+                    oldDir = ball.copyDirections()
+                    if (activeItems['magnetBall'] !== undefined ) {
+                        ball.y -= 10;
+                        ball.oldDirections.oldDx = oldDir.dx;
+                        ball.oldDirections.oldDy = oldDir.dy;
+                        isMagnetBall = true;
+                        if (ball.oldDirections.oldDx === 5) {
+                            ball.directions.dx = 0;
+                            ball.directions.dy = 0;
+                        }
+                    }else {
+                        ball.directions.dy = -ball.directions.dy;
                     }
                 } else {
                     // If ball falls
@@ -218,10 +236,10 @@ function game() {
                     }
                     else {
                         lives--;
-                        ballArray[i].x             = canvas.width/2;
-                        ballArray[i].y             = canvas.height-30;
-                        ballArray[i].directions.dx = 5;
-                        ballArray[i].directions.dy = -5;
+                        ball.x             = canvas.width/2;
+                        ball.y             = canvas.height-30;
+                        ball.directions.dx = 5;
+                        ball.directions.dy = -5;
                         paddleX                    = (canvas.width-paddleWidth)/2;
                         isMagnetBall               = true;
                     }
@@ -265,6 +283,25 @@ function game() {
             }
         }
     }
+
+    function drawStartModal() {
+        if (isModalDisplayed){
+            ctx.beginPath();
+            ctx.rect(canvas.width/5, canvas.height/5, 600, 300);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.closePath()
+            ctx.font = "30px space";
+            ctx.fillStyle = "black";
+            ctx.fillText("Welcome to Asteroid Breaker", canvas.width/4, canvas.height/4);
+            ctx.font = "16px arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Our spaceship is trap in an asteroid belt!", canvas.width/4, (canvas.height/4)+32);
+            ctx.fillText("We need you to destroy them !", canvas.width/4, (canvas.height/4)+64);
+            ctx.fillText("Our spaceship is trap in an asteroid belt!", canvas.width/4, (canvas.height/3)+ 32);
+        }
+    }
+    document.body.onclick = () => { return isModalDisplayed = false;}
 
     function drawBall() {
         for (let i = 0; i < ballArray.length; i++){
@@ -407,24 +444,25 @@ function game() {
     }
 
     function pause(){
-        if (gamePaused){
-            for (let i = 0; i < ballArray.length; i++) {
-                ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
-                ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy;
-            }
-            gamePaused = false;
-        }else{
-            for (let i = 0; i < ballArray.length; i++) {
-                let old = ballArray[i].copyDirections();
-                // Copy balls directions
-                ballArray[i].oldDirections.oldDx = old.dx;
-                ballArray[i].oldDirections.oldDy = old.dy;
-                //Stop the balls
-                ballArray[i].directions.dx = 0;
-                ballArray[i].directions.dy = 0;
-            }
-            gamePaused    = true;
-        }
+        ballArray[0].directions.dy =   - ballArray[0].directions.dy
+        // if (gamePaused){
+        //     for (let i = 0; i < ballArray.length; i++) {
+        //         ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
+        //         ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy;
+        //     }
+        //     gamePaused = false;
+        // }else{
+        //     for (let i = 0; i < ballArray.length; i++) {
+        //         oldDir = ballArray[i].copyDirections();
+        //         // Copy balls directions
+        //         ballArray[i].oldDirections.oldDx = oldDir.dx;
+        //         ballArray[i].oldDirections.oldDy = oldDir.dy;
+        //         //Stop the balls
+        //         ballArray[i].directions.dx = 0;
+        //         ballArray[i].directions.dy = 0;
+        //     }
+        //     gamePaused    = true;
+        // }
     }
 
     function scoreUp() {
@@ -484,18 +522,23 @@ function game() {
     function launchHandler(e) {
         if (e.code === "KeyE" && !gamePaused) {
             if (isMagnetBall){
+                isMagnetBall  = false;
                 for (let i = 0 ; i < ballArray.length; i++){
-                    let old = ballArray[i].copyDirections();
-                    ballArray[i].oldDirections.oldDx = old.dx;
-                    ballArray[i].oldDirections.oldDy = old.dy;
-                    if (ballArray[i].oldDirections.oldDy !== 0){
-                        ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy = old.dy;
-                        ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
+                    let ball = ballArray[i]
+                    // console.log(ball)
+                    console.log(ball.oldDirections)
+
+                    if (ball.directions.dy === 5){
+                        // console.log(ball)
+
+                        ball.directions.dy = ball.oldDirections.oldDy;
+                        ball.directions.dx = ball.oldDirections.oldDx;
+                        // ball.directions = ball.oldDirections;
+
                     }else{
-                        ballArray[i].directions.dy = -5 - i;
-                        ballArray[i].directions.dx = 5 + i;
+                        ball.directions.dy = -5 - i;
+                        ball.directions.dx = 5 + i;
                     }
-                    isMagnetBall  = false;
                 }
             }
         }

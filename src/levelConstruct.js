@@ -1,8 +1,7 @@
 export const levelConstructorArray =
 [
     {
-        canvasBackground : "assets/img/background_level1.jpg",
-        brickBackground  : "assets/img/brick2.jpg",
+        brickBackground  : "assets/img/brick.jpg",
         brickRowCount    : 7,
         brickColumnCount : 8,
         brickWidth       : 75,
@@ -10,10 +9,9 @@ export const levelConstructorArray =
         brickPadding     : 10,
         brickOffsetTop   : 100,
         brickOffsetLeft  : 140,
-        nbBonusBrick     : 2
+        nbBonusBrick     : 4
     },
     {
-        canvasBackground : "assets/img/background_level1.jpg",
         brickBackground  : "assets/img/test.png",
         brickRowCount    : 6,
         brickColumnCount : 5,
@@ -25,8 +23,7 @@ export const levelConstructorArray =
         nbBonusBrick     : 5
     },
     {
-        canvasBackground : "assets/img/background_level1.jpg",
-        brickBackground  : "assets/img/brick2.jpg",
+        brickBackground  : "assets/img/brick.jpg",
         brickRowCount    : 5,
         brickColumnCount : 6,
         brickWidth       : 75,
