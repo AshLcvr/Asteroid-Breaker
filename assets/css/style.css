@@ -1,14 +1,18 @@
-@font-face {
-    font-family: space;
-    src: url("../font/SpaceMission-rgyw9.otf");
-}
-
 * {
     padding: 0;
     margin: 0;
 }
+@font-face {
+    font-family: space;
+    src: url("../font/SpaceMission-rgyw9.otf");
+}
+@font-face {
+    font-family: neuro;
+    src: url("../font/neuropolitical-rg.otf");
+}
 body{
     display: flex;
+    position: relative;
 }
 .level0 {
      display: block;
@@ -29,4 +33,19 @@ body{
     margin: 0 auto;
     background-image: url("../img/hd-wallpaper-2675322_1280.jpg");
     background-position: center;
+}
+.player_name{
+    width: 400px;
+    height: 100px;
+    font-size: 3rem;
+    text-align: center;
+    font-family: neuro;
+    border-radius: 5px ;
+    position: absolute;
+    top: 270px;
+    right: 330px;
+    color: ;
+}
+.hidden{
+    visibility: hidden;
 }

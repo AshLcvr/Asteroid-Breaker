@@ -13,8 +13,8 @@ export const levelConstructorArray =
     },
     {
         brickBackground  : "assets/img/test.png",
-        brickRowCount    : 6,
-        brickColumnCount : 5,
+        brickRowCount    : 1,
+        brickColumnCount : 1,
         brickWidth       : 75,
         brickHeight      : 30,
         brickPadding     : 10,
@@ -22,17 +22,17 @@ export const levelConstructorArray =
         brickOffsetLeft  : 140,
         nbBonusBrick     : 5
     },
-    {
-        brickBackground  : "assets/img/brick.jpg",
-        brickRowCount    : 5,
-        brickColumnCount : 6,
-        brickWidth       : 75,
-        brickHeight      : 30,
-        brickPadding     : 10,
-        brickOffsetTop   : 100,
-        brickOffsetLeft  : 140,
-        nbBonusBrick     : 6
-    },
+    // {
+    //     brickBackground  : "assets/img/brick.jpg",
+    //     brickRowCount    : 5,
+    //     brickColumnCount : 6,
+    //     brickWidth       : 75,
+    //     brickHeight      : 30,
+    //     brickPadding     : 10,
+    //     brickOffsetTop   : 100,
+    //     brickOffsetLeft  : 140,
+    //     nbBonusBrick     : 6
+    // },
 ];
 
 function createBrickImage() {

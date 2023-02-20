@@ -1,6 +1,7 @@
 // Canvas & Context
-const canvas = document.getElementById("myCanvas");
-const ctx    = canvas.getContext("2d");
+const canvas          = document.getElementById("myCanvas");
+const ctx             = canvas.getContext("2d");
+const playerNameInput = document.getElementsByClassName('player_name');
 
 // Modals
 let isModalDisplayed = true;
@@ -42,9 +43,15 @@ let rightPressed       = false;
 let leftPressed        = false;
 
 // Score
-let score              = 0;
-let lives              = 3;
-let gamePaused         = false;
+let score                = 0;
+let lives                = 3;
+let isGamePaused         = true;
+let isEndGame            = false;
+let isInputVisible       = false;
+let isHighScoreDisplayed = false;
+let highScores           = [];
+let playerStats          = {};
+let playerName;
 
 // Bonus
 import {bonusObject} from "./objects.js";
@@ -65,10 +72,8 @@ game();
 
 function game() {
     let actualLevel = levelConstructorArray[levelIndex];
-    levelIndex > 0 ? drawLevelModal(levelIndex) : drawStartModal();
-    levelConstructor();
+    if (levelIndex !== levelConstructorArray.length){levelConstructor();}
     bricks = brickConstructor();
-
     draw();
 
     // Init keyboard and mouse inputs detection
@@ -78,10 +83,13 @@ function game() {
         'Mousemove' : {type : "mousemove" , function : mouseMoveHandler},
         'Space'     : {type : "keyup" , function : spaceBarHandler},
         'Launch'    : {type : ["keyup","click"] , function : launchHandler},
-        'Fire'      : {type : ["keyup","click"] , function : fireHandler}
+        'Fire'      : {type : ["keyup","click"] , function : fireHandler},
+        'Submit'    : {type : "keyup", function : submitHandler},
+        'Reload'    : {type: "keyup", function: reloadHandler}
     };
 
     document.addEventListener('DOMContentLoaded', addInputsListener, false)
+    document.addEventListener('input',function (e) {playerName = e.target.value;},false)
 
     function addInputsListener(){
         for (let directionName in DirectionsInput){
@@ -149,113 +157,125 @@ function game() {
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBricks();
-        drawBall();
-        drawPaddle(paddleColor);
-        drawScore();
-        drawLives();
-        collisionDetection();
-        drawStartModal();
-        drawLevelModal(levelIndex);
-
-        isArmed = true;
-
-        if (droppedItems.length > 0 && !gamePaused){
-            for (let i = 0; i<droppedItems.length;i++){
-                let item = droppedItems[i];
-                drawItem(item);
-                item.position.by  += 2;
+        if (levelIndex === levelConstructorArray.length ){
+            isEndGame = true;
+            endGame();
+            if (isInputVisible){
+                drawPlayerName()
             }
-        }
-        if (Object.keys(activeItems).length !== 0){
-            for (let itemIndex in activeItems){
-                let item   = activeItems[itemIndex];
-                drawObjectModal(item);
-                // item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})() ;
-                if(item.time){
-                    actionTimedItem(item)
-                }else{
-                    item.action();
-                    if (! isItemCaught){ delete activeItems[item.name];}
-                }
+            if (isHighScoreDisplayed){
+                drawHighScores()
             }
-        }
-        if (activeItems['fireLauncher'] !== undefined || isArmed){
-            if (hasFired){
-                if (!gamePaused){
-                    // Les projectiles s'effacent quand isArmed retourne à false
-                    for (let i = 0; i < launchedAmmo.length; i++){
-                        drawFireAnimation(launchedAmmo[i])
+        }else{
+            drawBricks();
+            drawBall();
+            drawPaddle(paddleColor);
+            drawScore();
+            drawLives();
+            collisionDetection();
+
+            drawStartModal();
+            drawLevelModal(levelIndex);
+
+            isArmed = true;
+
+            if (isGamePaused){
+                drawPauseMenu();
+            }
+            else{
+                if (droppedItems.length > 0 && !isGamePaused){
+                    for (let i = 0; i<droppedItems.length;i++){
+                        let item = droppedItems[i];
+                        drawItem(item);
+                        item.position.by  += 2;
                     }
                 }
-            }
-        }
-        if (isMagnetBall){
-            for (let i = 0; i < ballArray.length; i++)
-            {
-                ballArray[i].x             = paddleX + paddleWidth/2;
-                ballArray[i].directions.dx = 0;
-                ballArray[i].directions.dy = 0;
-            }
-        }
-        if (gamePaused){
-            drawPauseMenu();
-        }
-
-        for (let i = 0; i < ballArray.length; i++){
-            let ball = ballArray[i];
-            // Ball movement
-            ball.x += ball.directions.dx;
-            ball.y += ball.directions.dy;
-            // Edge collision detection
-            if(ball.x + ball.directions.dx > canvas.width-ball.ballRadius || ball.x + ball.directions.dx < ball.ballRadius) {
-                ball.directions.dx = -ball.directions.dx;
-            }
-            if(ball.y + ball.directions.dy < ball.ballRadius) {
-                ball.directions.dy = -ball.directions.dy;
-            } else if(ball.y + ball.directions.dy > canvas.height-ball.ballRadius) {
-                // Low Edge Detection
-                // If ball touch paddle
-                if(ball.x > paddleX && ball.x < paddleX + paddleWidth) {
-                    oldDir = ball.copyDirections()
-                    if (activeItems['magnetBall'] !== undefined ) {
-                        ball.y -= 10;
-                        ball.oldDirections.oldDx = oldDir.dx;
-                        ball.oldDirections.oldDy = oldDir.dy;
-                        isMagnetBall = true;
-                        if (ball.oldDirections.oldDx === 5) {
-                            ball.directions.dx = 0;
-                            ball.directions.dy = 0;
+                if (Object.keys(activeItems).length !== 0){
+                    for (let itemIndex in activeItems){
+                        let item   = activeItems[itemIndex];
+                        drawItemModal(item);
+                        // item.time ? actionTimedItem(item) : (()=>{item.action() ; delete activeItems[item.name]})() ;
+                        if(item.time){
+                            actionTimedItem(item)
+                        }else{
+                            item.action();
+                            if (! isItemCaught){ delete activeItems[item.name];}
                         }
-                    }else {
-                        ball.directions.dy = -ball.directions.dy;
-                    }
-                } else {
-                    // If ball falls
-                    if (ballArray.length > 1){
-                        ballArray.splice(i,1)
-                    }
-                    else {
-                        lives--;
-                        ball.x             = canvas.width/2;
-                        ball.y             = canvas.height-30;
-                        ball.directions.dx = 5;
-                        ball.directions.dy = -5;
-                        paddleX                    = (canvas.width-paddleWidth)/2;
-                        isMagnetBall               = true;
-                    }
-                    if(!lives) {
-                        alert("GAME OVER");
-                        document.location.reload();
                     }
                 }
+                if (activeItems['fireLauncher'] !== undefined || isArmed){
+                    if (hasFired){
+                        // Les projectiles s'effacent quand isArmed retourne à false
+                        for (let i = 0; i < launchedAmmo.length; i++){
+                            drawFireAnimation(launchedAmmo[i])
+                        }
+                    }
+                }
+                if (isMagnetBall){
+                    for (let i = 0; i < ballArray.length; i++)
+                    {
+                        ballArray[i].x             = paddleX + paddleWidth/2;
+                        ballArray[i].directions.dx = 0;
+                        ballArray[i].directions.dy = 0;
+                    }
+                }
+
+                for (let i = 0; i < ballArray.length; i++){
+                    let ball = ballArray[i];
+                    // Ball movement
+                    ball.x += ball.directions.dx;
+                    ball.y += ball.directions.dy;
+                    // Edge collision detection
+                    if(ball.x + ball.directions.dx > canvas.width-ball.ballRadius || ball.x + ball.directions.dx < ball.ballRadius) {
+                        ball.directions.dx = -ball.directions.dx;
+                    }
+                    if(ball.y + ball.directions.dy < ball.ballRadius) {
+                        ball.directions.dy = -ball.directions.dy;
+                    } else if(ball.y + ball.directions.dy > canvas.height-ball.ballRadius) {
+                        // Low Edge Detection
+                        // If ball touch paddle
+                        if(ball.x > paddleX && ball.x < paddleX + paddleWidth) {
+                            oldDir = ball.copyDirections()
+                            if (activeItems['magnetBall'] !== undefined ) {
+                                ball.y -= 10;
+                                ball.oldDirections.oldDx = oldDir.dx;
+                                ball.oldDirections.oldDy = oldDir.dy;
+                                isMagnetBall = true;
+                                if (ball.oldDirections.oldDx === 5) {
+                                    ball.directions.dx = 0;
+                                    ball.directions.dy = 0;
+                                }
+                            }else {
+                                ball.directions.dy = -ball.directions.dy;
+                            }
+                        } else {
+                            // If ball falls
+                            if (ballArray.length > 1){
+                                ballArray.splice(i,1)
+                            }
+                            else {
+                                lives--;
+                                ball.x             = canvas.width/2;
+                                ball.y             = canvas.height-30;
+                                ball.directions.dx = 5;
+                                ball.directions.dy = -5;
+                                paddleX                    = (canvas.width-paddleWidth)/2;
+                                isMagnetBall               = true;
+                            }
+                            if(!lives) {
+                                alert("GAME OVER");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                }
+                // Keyboard arrow movement
+                if(rightPressed && paddleX < canvas.width-paddleWidth) {
+                    paddleX += 7;
+                } else if(leftPressed && paddleX > 0) {
+                    paddleX -= 7;
+                }
             }
-        }
-        // Keyboard arrow movement
-        if(rightPressed && paddleX < canvas.width-paddleWidth) {
-            paddleX += 7;
-        } else if(leftPressed && paddleX > 0) {
-            paddleX -= 7;
         }
         requestAnimationFrame(draw);
     }
@@ -285,37 +305,39 @@ function game() {
         }
     }
 
-    console.log(levelIndex)
+    function drawCanvasBox(){
+        ctx.beginPath();
+        ctx.rect(220, 160, 520, 320);
+        ctx.fillStyle = "grey";
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+        ctx.rect(230, 170, 500, 300);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        ctx.closePath();
+    }
+
     function drawStartModal() {
         if (isModalDisplayed && levelIndex < 1){
-            gamePaused = true;
-            ctx.beginPath();
-            ctx.rect(220, 160, 520, 320);
-            ctx.fillStyle = "grey";
-            ctx.fill();
-            ctx.closePath();
-            ctx.beginPath();
-            ctx.rect(230, 170, 500, 300);
-            ctx.fillStyle = "white";
-            ctx.fill();
-            ctx.closePath();
+            drawCanvasBox();
             ctx.font = "30px space";
             ctx.fillStyle = "black";
             ctx.fillText("Welcome to Asteroid Breaker", 265 , 200);
-            ctx.font = "16px arial";
-            ctx.fillStyle = "black";
-            ctx.fillText("Our spaceship is trap in an asteroid belt!", 265, 240);
-            ctx.fillText("We need you to destroy them !", 265, 264);
-            ctx.fillText("Here are your instructions :", 265, 312);
-            ctx.fillText("- Press E to launch the ball", 265, 336);
-            ctx.fillText("- If armed, press Z to fire", 265, 360);
-            ctx.fillText("- Press Spacebar to pause", 265, 384);
-            ctx.fillText("Click anywhere to start", 400, 432);
+            ctx.font = "14px neuro";
+            ctx.fillText("On the way to Tallon 4,", 255, 240);
+            ctx.fillText("Our spaceship was trapped in an asteroid belt", 255, 264);
+            ctx.fillText("We need you to destroy them !", 255, 288);
+            ctx.fillText("Here are your instructions :", 255, 312);
+            ctx.fillText("- Press E to launch the ball", 255, 336);
+            ctx.fillText("- If armed, press Z to fire", 255, 360);
+            ctx.fillText("- Press Spacebar to pause", 255, 384);
+            ctx.fillText("Click anywhere to start", 380, 432);
         }
     }
-    document.body.onclick = () => { isModalDisplayed = false; gamePaused = false}
+    document.body.onclick = () => { isModalDisplayed = false; isGamePaused = false};
 
-    function drawObjectModal(item){
+    function drawItemModal(item){
         if (item.position.by > canvas.height/2 && isItemCaught) {
             item.position.by -= 3;
             ctx.font = "32px space";
@@ -326,13 +348,67 @@ function game() {
         }
     }
 
-    console.log(isModalDisplayed)
     function drawLevelModal(levelIndex){
         if (isModalDisplayed && levelIndex >= 1) {
+            let playerLevel = levelIndex+1;
             ctx.font = "132px space";
             ctx.fillStyle = "#f6fff4";
-            ctx.fillText("LEVEL "+levelIndex, 300, 350);
+            ctx.fillText("LEVEL "+ playerLevel, 270, 350);
         }
+    }
+
+    function endGame(){
+        drawEndGameModal();
+    }
+
+    function drawEndGameModal(){
+        drawCanvasBox();
+        ctx.font = "30px space";
+        ctx.fillStyle = "black";
+        ctx.fillText("Congratulations !!", 360 , 200);
+        ctx.fillText("Your score : " + score, 370, 370);
+        ctx.font = "14px neuro";
+        ctx.fillText("You did it! ", 265, 240);
+        ctx.fillText("Thanks to you we will be able to land on Tallon 4 ", 265, 264);
+        ctx.fillText("and rescue the Galactic Federation troops!", 265, 290);
+        ctx.fillText("Congratulations soldier !", 265, 314);
+        ctx.fillText("Press E to access Highscores,", 340, 420);
+        ctx.fillText("Thanks you for playing ;)", 370, 450);
+    }
+
+    function drawPlayerName(){
+        drawCanvasBox();
+        ctx.font = "30px space";
+        ctx.fillStyle = "black";
+        ctx.fillText("Register you :", 385 , 230);
+        ctx.font = "14px neuro";
+        ctx.fillText("Press Enter to submit", 380, 432);
+        ctx.font = "13px neuro";
+        ctx.fillStyle = "red";
+        ctx.fillText("<3 to 7 characters>", 275, 270);
+    }
+
+    function drawHighScores(){
+        drawCanvasBox();
+        ctx.font = "30px space";
+        ctx.fillStyle = "black";
+        ctx.fillText("HIGHSCORES :", 390 , 200);
+        ctx.font = "24px space";
+        ctx.fillText(highScores[0].name+" : "+highScores[0].score+ " pts", 410 , 270);
+        ctx.fillText(highScores[1].name+" : "+highScores[1].score+ " pts", 400 , 320);
+        ctx.fillText(highScores[2].name+" : "+highScores[2].score+ " pts", 400 , 370);
+        ctx.fillText(highScores.indexOf(playerStats)+1 + ". "+playerStats.name+" : "+playerStats.score+ " pts", 380 , 420);
+        ctx.font = "16px space";
+        ctx.fillText("Press R to restart", 400 , 455);
+        ctx.font = "50px space";
+        ctx.fillStyle = "#FFD700";
+        ctx.fillText("I.",330 , 270);
+        ctx.font = "48px space";
+        ctx.fillStyle = "#C0C0C0";
+        ctx.fillText("II.",320 , 320);
+        ctx.font = "46px space";
+        ctx.fillStyle = "#B87333";
+        ctx.fillText("III.",310 , 370);
     }
 
     function drawBall() {
@@ -467,8 +543,8 @@ function game() {
 
     function gameReset() {
         // Reset Paddle & Ball
-        lives < 3 || levelIndex === 2  ? lives++ : null;
-        ballArray[0].y    = canvas.height-25;
+        lives < 3 || levelIndex > 2  ? lives++ : null;
+        ballArray[0].y                = canvas.height-25;
         ballArray[0].directions.dx    = 0;
         ballArray[0].directions.dy    = 0;
         paddleX           = (canvas.width-paddleWidth)/2;
@@ -477,15 +553,16 @@ function game() {
         bricks            = [];
         launchedAmmo      = [];
         isModalDisplayed  = true;
+        isGamePaused      = true;
     }
 
     function pause(){
-        if (gamePaused){
+        if (isGamePaused){
             for (let i = 0; i < ballArray.length; i++) {
                 ballArray[i].directions.dx = ballArray[i].oldDirections.oldDx;
                 ballArray[i].directions.dy = ballArray[i].oldDirections.oldDy;
             }
-            gamePaused = false;
+            isGamePaused = false;
         }else{
             for (let i = 0; i < ballArray.length; i++) {
                 oldDir = ballArray[i].copyDirections();
@@ -496,7 +573,7 @@ function game() {
                 ballArray[i].directions.dx = 0;
                 ballArray[i].directions.dy = 0;
             }
-            gamePaused    = true;
+            isGamePaused    = true;
         }
     }
 
@@ -507,7 +584,7 @@ function game() {
 
     function actionTimedItem(item){
         if (item.time !== 1){
-            if (!gamePaused){
+            if (!isGamePaused){
                 item.action? item.action() : null;
                 item.time -= 1;
             }
@@ -525,7 +602,7 @@ function game() {
     }
 
     function keyDownHandler(e) {
-        if (!gamePaused){
+        if (!isGamePaused){
             if(e.key === "Right" || e.key === "ArrowRight") {
                 rightPressed = true;
             }
@@ -536,7 +613,7 @@ function game() {
     }
 
     function keyUpHandler(e) {
-        if (!gamePaused) {
+        if (!isGamePaused) {
             if (e.key === "Right" || e.key === "ArrowRight") {
                 rightPressed = false;
             } else if (e.key === "Left" || e.key === "ArrowLeft") {
@@ -546,7 +623,7 @@ function game() {
     }
 
     function mouseMoveHandler(e) {
-        if (!gamePaused) {
+        if (!isGamePaused) {
             const relativeX = e.clientX - canvas.offsetLeft;
             if (relativeX > 0 && relativeX < canvas.width) {
                 paddleX = relativeX - paddleWidth / 2;
@@ -555,32 +632,28 @@ function game() {
     }
 
     function launchHandler(e) {
-        if (e.code === "KeyE" && !gamePaused) {
+        if (e.code === "KeyE" && !isGamePaused) {
             if (isMagnetBall){
                 isMagnetBall  = false;
                 for (let i = 0 ; i < ballArray.length; i++){
                     let ball = ballArray[i]
-                    // console.log(ball)
-                    console.log(ball.oldDirections)
-
                     if (ball.directions.dy === 5){
-                        // console.log(ball)
-
                         ball.directions.dy = ball.oldDirections.oldDy;
                         ball.directions.dx = ball.oldDirections.oldDx;
-                        // ball.directions = ball.oldDirections;
-
                     }else{
                         ball.directions.dy = -5 - i;
                         ball.directions.dx = 5 + i;
                     }
                 }
             }
+        } else if(e.code === "KeyE" && isEndGame){
+            isInputVisible = true;
+            playerNameInput[0].classList.remove('hidden');
         }
     }
 
     function fireHandler(e) {
-        if (e.code === "KeyW" && !gamePaused) {
+        if (e.code === "KeyW" && !isGamePaused) {
             if (isArmed){
                 let ammo = {
                     'leftAmmoX'  : JSON.parse(JSON.stringify(paddleX-10)),
@@ -590,6 +663,30 @@ function game() {
                 launchedAmmo.push(ammo);
                 hasFired = true;
             }
+        }
+    }
+
+    function submitHandler(e){
+        if (e.code === "Enter" && isInputVisible){
+            if (playerNameInput[0].value.length >= 3 && playerNameInput[0].value.length <= 7){
+                playerNameInput[0].classList.toggle('hidden');
+                isInputVisible = false;
+                playerStats    = {name : playerName,score : score};
+                highScores.push(playerStats);
+                highScores.push({name : 'GOD',score:320});
+                highScores.push({name : 'Milou',score:33});
+                highScores.push({name : 'Tounio',score:300});
+                highScores.sort((p1, p2) => (p1.score < p2.score) ? 1 : (p1.score > p2.score) ? -1 : 0);
+                isHighScoreDisplayed = true;
+            }else{
+                window.alert('Your name can contain 3 to 7 characters only !')
+            }
+        }
+    }
+
+    function reloadHandler(e){
+        if (e.code === "KeyR" && isEndGame && !isInputVisible){
+            document.location.reload();
         }
     }
 }
