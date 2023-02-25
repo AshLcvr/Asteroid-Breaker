@@ -38,16 +38,12 @@ export const levelConstructorArray =
     },
 ];
 
-createBrickImage();
-
-export function createBrickImage(){
-    for (let i = 0; i < levelConstructorArray.length; i++){
-        let actualLevel = levelConstructorArray[i];
-        let img = new Image();
-        img.src = actualLevel.brickBackground;
-        img.onload = () => {
-            splitImage(i,img)
-        }
+for (let i = 0; i < levelConstructorArray.length; i++){
+    let actualLevel = levelConstructorArray[i];
+    let img = new Image();
+    img.src = actualLevel.brickBackground;
+    img.onload = () => {
+        splitImage(i,img)
     }
 }
 
