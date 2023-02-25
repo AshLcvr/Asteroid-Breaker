@@ -1,73 +1,69 @@
 // Canvas & Context
-export const canvas          = document.getElementById("myCanvas");
-export const ctx             = canvas.getContext("2d");
-export const playerNameInput = document.getElementsByClassName('player_name');
+export const canvas = document.getElementById("myCanvas"),
+    ctx             = canvas.getContext("2d"),
+    playerNameInput = document.getElementsByClassName('player_name');
 
 // Level Constructor
-let canvasClass        = canvas.classList[0];
-export let levelIndex  = canvasClass[5];
 import { levelConstructorArray } from "./levelConstruct.js";
+export let canvasClass = canvas.classList[0],
+    levelIndex         = canvasClass[5];
+
 // Bricks
-let brickRowCount;
-let brickColumnCount;
-let brickWidth;
-let brickHeight;
-let brickPadding;
-let brickOffsetTop;
-let brickOffsetLeft;
-let bricks            = [];
-let brokenBricks      = 0;
+let brickRowCount,brickColumnCount,brickWidth,brickHeight,brickPadding,brickOffsetTop,brickOffsetLeft,
+    bricks            = [],
+    brokenBricks      = 0;
 
 // Ball(s)
-export let ballArray   = [];
-let ball               = {
-    ballRadius    : 10,
-    x             : canvas.width/2,
-    y             : canvas.height-30,
-    directions    : {dx : 5, dy : -5},
-    oldDirections : {oldDx  : 0, oldDy : 0},
-    copyDirections: function() {return JSON.parse(JSON.stringify(this.directions))},
-};
-let oldDir             = {};
+export let ballArray = [],
+    oldDir           = {},
+    ball             = {
+        ballRadius    : 10,
+        x             : canvas.width/2,
+        y             : canvas.height-30,
+        directions    : {dx : 5, dy : -5},
+        oldDirections : {oldDx  : 0, oldDy : 0},
+        copyDirections: function() {return JSON.parse(JSON.stringify(this.directions))},
+    };
 ballArray.push(ball);
 
 // Paddle
-export let paddleWidth  = 85;
-let paddleHeight        = 15;
-export let paddleX      = (canvas.width-paddleWidth)/2;
-let paddleColor         = "#fff3fc";
-export let rightPressed = false;
-export let leftPressed  = false;
+export let paddleWidth  = 85,
+    paddleHeight        = 15,
+    paddleX             = (canvas.width-paddleWidth)/2,
+    paddleColor         = "#fff3fc",
+    rightPressed        = false,
+    leftPressed         = false;
 
 // Score
-export let score         = 0;
-let lives                = 3;
-export let isGamePaused  = true;
-export let isEndGame     = false;
-export let highScores    = [];
-export let playerStats   = {};
-let playerName;
+export let score  = 0,
+    lives         = 3,
+    isGamePaused  = true,
+    isEndGame     = false,
+    highScores    = [],
+    playerStats   = {},
+    playerName;
 
 // Bonus
 import {bonusObject} from "./objects.js";
-export let lifeUp            = ()=>{ lives++ };
-export let modifyPaddleWidth = pWidth => { paddleWidth = pWidth };
-export let fireLauncher      = boolean => { isArmed = boolean};
-export let bigBall           = bRadius => { for (let i = 0; i < ballArray.length; i++){ballArray[i].ballRadius = bRadius}};
-export let modifyItemCaught  = boolean => { isItemCaught = boolean};
-export let isItemCaught      = false;
-export let isMagnetBall      = true;
-export let isArmed           = false;
-export let hasFired          = false;
-export let launchedAmmo      = [];
-let droppedItems = [];
-let activeItems  = {};
+export let lifeUp     =    ()   =>{ lives++ },
+    modifyPaddleWidth = pWidth  => { paddleWidth = pWidth },
+    fireLauncher      = boolean => { isArmed = boolean},
+    bigBall           = bRadius => { for (let i = 0; i < ballArray.length; i++){ballArray[i].ballRadius = bRadius}},
+    modifyItemCaught  = boolean => { isItemCaught = boolean},
+    isItemCaught      = false,
+    isMagnetBall      = true,
+    isArmed           = false,
+    hasFired          = false,
+    launchedAmmo      = [],
+    droppedItems      = [],
+    activeItems       = {};
 
 // Modals
 import {drawStartModal,drawLevelModal,drawItemModal,drawEndGameModal,drawPlayerName,drawHighScores} from './modals.js';
-export let isModalDisplayed        = true;
-export let isInputVisible          = false;
-export let isHighScoreDisplayed    = false;
+// import * as Modals from './modals.js';
+export let isModalDisplayed = false,
+    isInputVisible          = false,
+    isHighScoreDisplayed    = false;
 
 // Init keyboard and mouse inputs detection
 const DirectionsInput = {
@@ -80,31 +76,24 @@ const DirectionsInput = {
     'Submit'    : {type : "keyup", function : submitHandler},
     'Reload'    : {type: "keyup", function: reloadHandler}
 };
-function addInputsListener(){
-    for (let directionName in DirectionsInput){
-        let direction = DirectionsInput[directionName];
-        if (Array.isArray(direction.type)){
-            for (let i = 0; i < direction.type.length ; i++){
-                document.addEventListener(direction.type[i], direction.function, false);
-            }
-        }else{
-            document.addEventListener(direction.type, direction.function, false);
-        }
-    }
-}
 
-document.addEventListener('DOMContentLoaded', addInputsListener, false);
-document.addEventListener("click",() => { isModalDisplayed = false; isGamePaused = false});
+document.addEventListener('DOMContentLoaded', () => {addInputsListener();game()}, false);
+document.addEventListener("click",() => { isModalDisplayed = false; isGamePaused = false},false);
 document.addEventListener('input',function (e) {playerName = e.target.value;},false);
-
-// GAME !
-game();
 
 // Functions
 function game() {
-    if (levelIndex !== levelConstructorArray.length){levelConstructor();}
-    bricks = brickConstructor();
-    draw();
+    if (levelIndex !== levelConstructorArray.length ){
+        levelConstructor();
+        bricks = brickConstructor();
+        draw();
+    }else{
+        endgame()
+    }
+}
+
+function endgame() {
+     debugger
 }
 
 function levelConstructor(){
@@ -126,15 +115,15 @@ function randomIntBonusBricks(row,column){
     return randomIntBonusBricks ;
 }
 
-function randomObjectBonus(bonusObject) {
+function randomObjectBonus(bonusObject){
     let bonusArray = Object.keys(bonusObject);
     let randIndex  = Math.floor(Math.random() * (Object.keys(bonusArray).length));
     return bonusObject[bonusArray[randIndex]];
 }
 
-function brickConstructor() {
-    let brickNumber = 0;
-    let bonusBricks = randomIntBonusBricks(brickRowCount,brickColumnCount);
+function brickConstructor(){
+    let brickNumber = 0,
+        bonusBricks = randomIntBonusBricks(brickRowCount,brickColumnCount);
 
     for(let c=0; c<brickColumnCount; c++) {
         bricks[c] = [];
@@ -157,7 +146,7 @@ function brickConstructor() {
     return bricks
 }
 
-function draw() {
+function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (levelIndex === levelConstructorArray.length){
         isEndGame = true;
@@ -278,32 +267,23 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-function drawBricks() {
+function drawBricks(){
     for(let c=0; c<brickColumnCount; c++) {
         for(let r=0; r<brickRowCount; r++) {
+            let brick = bricks[c][r];
             if(bricks[c][r].status === 1) {
                 // C'est ici que ça se passe pour les collisions
                 const brickX = (r*(brickWidth+brickPadding))+brickOffsetLeft;
                 const brickY = (c*(brickHeight+brickPadding))+brickOffsetTop;
                 bricks[c][r].x = brickX;
                 bricks[c][r].y = brickY;
-                ctx.beginPath();
-                ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                // si la brique contient un bonus
-                if (bricks[c][r].bonus){
-                    ctx.fillStyle = "gold";
-                }else{
-                    ctx.fillStyle =  ctx.createPattern(levelConstructorArray[levelIndex].brickBackground,'repeat');
-                }
-                ctx.fill();
-                ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
-                ctx.closePath()
+                ctx.drawImage(levelConstructorArray[levelIndex].imgParts[brick.number -1],brickX,brickY,brickWidth,brickHeight)
             }
         }
     }
 }
 
-function drawBall() {
+function drawBall(){
     for (let i = 0; i < ballArray.length; i++){
         ctx.beginPath();
         ctx.arc(ballArray[i].x, ballArray[i].y, ballArray[i].ballRadius, 0, Math.PI * 2);
@@ -313,7 +293,7 @@ function drawBall() {
     }
 }
 
-function drawPaddle(paddleColor) {
+function drawPaddle(paddleColor){
     if (isArmed){
         ctx.beginPath();
         ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
@@ -344,13 +324,13 @@ function drawFireAnimation(activeAmmo){
     ctx.closePath();
 }
 
-function drawFallingItem(b) {
+function drawFallingItem(b){
     b.object.position.bx = (b.x + (brickWidth/2))-15;
     b.object.position.by = (b.y + (brickHeight/2))-15;
     droppedItems.push(b.object)
 }
 
-function drawItem(item) {
+function drawItem(item){
     ctx.beginPath();
     ctx.rect(item.position.bx,item.position.by,20,20);
     ctx.fillStyle = ctx.createPattern(item.img,'repeat');
@@ -369,19 +349,19 @@ function drawItem(item) {
     }
 }
 
-function drawScore() {
+function drawScore(){
     ctx.font = "32px space";
     ctx.fillStyle = "#f6fff4";
     ctx.fillText("Score: "+score, 20, 40);
 }
 
-function drawLives() {
+function drawLives(){
     ctx.font = "32px space";
     ctx.fillStyle = "#f6fff4";
     ctx.fillText("Vies: "+lives, canvas.width-120, 40);
 }
 
-function drawPauseMenu() {
+function drawPauseMenu(){
     if (! isModalDisplayed) {
         ctx.font = "132px space";
         ctx.fillStyle = "#f6fff4";
@@ -389,10 +369,9 @@ function drawPauseMenu() {
     }
 }
 
-function collisionDetection() {
+function collisionDetection(){
     for(let c=0; c<brickColumnCount; c++) {
         for(let r=0; r<brickRowCount; r++) {
-            levelIndex === 1 ? (() => {bricks < 30 ? console.log(b) : null })() : null;
             let b = bricks[c][r];
             if(b.status === 1) {
                 if (launchedAmmo.length > 0){
@@ -433,7 +412,7 @@ function collisionDetection() {
     }
 }
 
-function gameReset() {
+function gameReset(){
     // Reset Paddle & Ball
     lives < 3 || levelIndex > 2  ? lives++ : null;
     ballArray[0].y                = canvas.height-25;
@@ -448,7 +427,7 @@ function gameReset() {
     isGamePaused      = true;
 }
 
-function scoreUp() {
+function scoreUp(){
     brokenBricks++;
     activeItems['multiplyScore'] !== undefined ? score += 2 : score++;
 }
@@ -465,6 +444,7 @@ function actionTimedItem(item){
         item.reverseAction ? item.reverseAction() : null;
     }
 }
+
 export function pause(){
     if (isGamePaused){
         for (let i = 0; i < ballArray.length; i++) {
@@ -486,13 +466,13 @@ export function pause(){
     }
 }
 
-function spaceBarHandler(e) {
+function spaceBarHandler(e){
     if (e.code === "Space") {
         pause()
     }
 }
 
-function keyDownHandler(e) {
+function keyDownHandler(e){
     if (!isGamePaused){
         if(e.key === "Right" || e.key === "ArrowRight") {
             rightPressed = true;
@@ -503,7 +483,7 @@ function keyDownHandler(e) {
     }
 }
 
-function keyUpHandler(e) {
+function keyUpHandler(e){
     if (!isGamePaused) {
         if (e.key === "Right" || e.key === "ArrowRight") {
             rightPressed = false;
@@ -513,7 +493,7 @@ function keyUpHandler(e) {
     }
 }
 
-function mouseMoveHandler(e) {
+function mouseMoveHandler(e){
     if (!isGamePaused) {
         const relativeX = e.clientX - canvas.offsetLeft;
         if (relativeX > 0 && relativeX < canvas.width) {
@@ -522,7 +502,7 @@ function mouseMoveHandler(e) {
     }
 }
 
-function launchHandler(e) {
+function launchHandler(e){
     if (e.code === "KeyE" && !isGamePaused) {
         if (isMagnetBall){
             isMagnetBall  = false;
@@ -543,7 +523,7 @@ function launchHandler(e) {
     }
 }
 
-function fireHandler(e) {
+function fireHandler(e){
     if (e.code === "KeyW" && !isGamePaused) {
         if (isArmed){
             let ammo = {
@@ -578,5 +558,18 @@ function submitHandler(e){
 function reloadHandler(e){
     if (e.code === "KeyR" && isEndGame && !isInputVisible){
         document.location.reload();
+    }
+}
+
+function addInputsListener(){
+    for (let directionName in DirectionsInput){
+        let direction = DirectionsInput[directionName];
+        if (Array.isArray(direction.type)){
+            for (let i = 0; i < direction.type.length ; i++){
+                document.addEventListener(direction.type[i], direction.function, false);
+            }
+        }else{
+            document.addEventListener(direction.type, direction.function, false);
+        }
     }
 }
