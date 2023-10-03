@@ -1,4 +1,5 @@
-import {canvas,ctx,score,levelIndex,isModalDisplayed,isItemCaught,modifyItemCaught,highScores,playerStats} from './game.js'
+import {canvas,ctx,score,levelIndex,isModalDisplayed,highScores} from './game.js'
+import {playerStats} from './inputs.js';
 
 function drawCanvasBox(){
     ctx.beginPath();
@@ -14,21 +15,19 @@ function drawCanvasBox(){
 }
 
 export function drawStartModal() {
-    if (isModalDisplayed && levelIndex < 1){
-        drawCanvasBox();
-        ctx.font = "30px space";
-        ctx.fillStyle = "black";
-        ctx.fillText("Welcome to Asteroid Breaker", 265 , 200);
-        ctx.font = "14px neuro";
-        ctx.fillText("On the way to Tallon 4,", 255, 240);
-        ctx.fillText("Our spaceship was trapped in an asteroid belt", 255, 264);
-        ctx.fillText("We need you to destroy them !", 255, 288);
-        ctx.fillText("Here are your instructions :", 255, 312);
-        ctx.fillText("- Press E to launch the ball", 255, 336);
-        ctx.fillText("- If armed, press Z to fire", 255, 360);
-        ctx.fillText("- Press Spacebar to pause", 255, 384);
-        ctx.fillText("Click anywhere to start", 380, 432);
-    }
+    drawCanvasBox();
+    ctx.font = "30px space";
+    ctx.fillStyle = "black";
+    ctx.fillText("Welcome to Asteroid Breaker", 265 , 200);
+    ctx.font = "14px neuro";
+    ctx.fillText("On the way to Tallon 4,", 255, 240);
+    ctx.fillText("Our spaceship was trapped in an asteroid belt", 255, 264);
+    ctx.fillText("We need you to destroy them !", 255, 288);
+    ctx.fillText("Here are your instructions :", 255, 312);
+    ctx.fillText("- Press E to launch the ball", 255, 336);
+    ctx.fillText("- If armed, press Z to fire", 255, 360);
+    ctx.fillText("- Press Spacebar to pause", 255, 384);
+    ctx.fillText("Click anywhere to start", 380, 432);
 }
 
 export function drawLevelModal(levelIndex){
@@ -41,13 +40,13 @@ export function drawLevelModal(levelIndex){
 }
 
 export function drawItemModal(item){
-    if (item.position.by > canvas.height/2 && isItemCaught) {
+    if (item.position.by > canvas.height/2 && item.isFalling) {
         item.position.by -= 3;
         ctx.font = "32px space";
         ctx.fillStyle = "#f6fff4";
         ctx.fillText(item.text, item.position.bx, item.position.by);
     }else if(item.position.by <= canvas.height/2){
-        modifyItemCaught(false);
+        item.isFalling = false;
     }
 }
 

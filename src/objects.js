@@ -1,15 +1,15 @@
 import {paddleWidth,ballArray,lifeUp,modifyPaddleWidth,fireLauncher,bigBall} from './game.js';
 
 export const bonusObject = {
-        'life' : {
-        name   : 'life',
-        text   : "+1 LIFE",
-        time   : null,
-        img    : "assets/img/item/gold_heart.png",
-        action : () => {
-            lifeUp();
-        },
-        position : {bx : 0,by : 0}
+    'life' : {
+        name      : 'life',
+        text      : "+1 LIFE",
+        time      : 80,
+        img       : "assets/img/item/gold_heart.png",
+        action    : () => {lifeUp()},
+        position  : {bx : 0,by : 0},
+        actionDone: false,
+        isFalling : false
     },
      'bigPaddle' : {
          name   : 'bigPaddle',
@@ -17,21 +17,23 @@ export const bonusObject = {
         time   : 1000,
         img    : "assets/img/brick.jpg",
         action : () => {
-            if (paddleWidth !== 85*2 ){
-                modifyPaddleWidth(paddleWidth*2)
+            if (paddleWidth !== 150 ){
+                modifyPaddleWidth(150)
             }
         },
         reverseAction : () => {
-            modifyPaddleWidth(85)
+            modifyPaddleWidth(100)
         },
-         position : {bx : 0,by : 0}
+         position : {bx : 0,by : 0},
+         isFalling : false
      },
      'multiplyScore' :{
          name   : 'multiplyScore',
          text   : "Score X2",
          time   : 200,
          img    : "assets/img/brick.jpg",
-         position : {bx : 0,by : 0}
+         position : {bx : 0,by : 0},
+         isFalling : false,
      },
     'fireLauncher'  : {
         name : 'fireLauncher',
@@ -44,14 +46,16 @@ export const bonusObject = {
         reverseAction : () => {
             fireLauncher(false)
         },
-        position : {bx : 0,by : 0}
+        position : {bx : 0,by : 0},
+        isFalling : false,
     },
     'magnetBall'  : {
         name : 'magnetBall',
         text : "Magnetic Ball",
-        time : 10000,
+        time : 1000,
         img : "assets/img/brick.jpg",
-        position : {bx : 0,by : 0}
+        position : {bx : 0,by : 0},
+        isFalling : false,
     },
     'bigBall' : {
         name : 'bigBall',
@@ -64,17 +68,20 @@ export const bonusObject = {
         reverseAction : () => {
             bigBall(10)
         },
-        position : {bx : 0,by : 0}
+        position : {bx : 0,by : 0},
+        isFalling : false
     },
     'multiBall' : {
         name : 'multiBall',
         text : 'MultiBall !!!',
+        time : 80,
         img : 'assets/img/brick.jpg',
         action : () => {
             createMultiBalls(5)
         },
-        position : {bx : 0,by : 0}
-    }
+        position : {bx : 0,by : 0},
+        isFalling : false
+    },
 };
 
 createImageObject();
@@ -83,9 +90,45 @@ export function createImageObject() {
     for (let item in bonusObject){
         let img = new Image();
         img.src = bonusObject[item].img;
-        bonusObject[item].img = img;
+        img.onload = () => {bonusObject[item].img = img;}
     }
 }
+
+createRocketImage();
+createBallImage();
+createPaddleImages();
+
+export function createRocketImage(){
+    let img = new Image();
+    img.src = './assets/img/item/rocket.png';
+    return img
+}
+
+export function createBallImage(){
+    let img = new Image();
+    img.src = './assets/elements/ball.png';
+    return img;
+}
+
+export function createPaddleImages(){
+    let paddleImagesArray = [];
+    for (let i = 1; i < 4 ; i++){
+        let img = new Image();
+        img.src = './assets/elements/paddle/paddle_f'+i+'.png';
+        paddleImagesArray.push(img)
+    }
+    return paddleImagesArray;
+}
+
+// export function createArmedPaddleImages(){
+//     let armedPaddleImagesArray = [];
+//     for (let i = 1; i < 4 ; i++){
+//         let img = new Image();
+//         img.src = './assets/elements/paddle/armedPaddle_f'+i+'.png';
+//         armedPaddleImagesArray.push(img)
+//     }
+//     return armedPaddleImagesArray;
+// }
 
 export function createMultiBalls(max) {
     for (let i = 0; i < max ; i++) {

@@ -8,7 +8,20 @@ export const levelConstructorArray =
         brickPadding     : 2,
         brickOffsetTop   : 150,
         brickOffsetLeft  : 250,
-        nbBonusBrick     : 1,
+        nbBonusBrick     : 10,
+        brickBackground  : "assets/img/crystal-2898037_1280-removebg-preview.png",
+        imgParts         : [],
+        invisibleBricks  : [1,21,25]
+    },
+    {
+        brickRowCount    : 5,
+        brickColumnCount : 5,
+        brickWidth       : 75,
+        brickHeight      : 30,
+        brickPadding     : 5,
+        brickOffsetTop   : 180,
+        brickOffsetLeft  : 300,
+        nbBonusBrick     : 5,
         brickBackground  : "assets/img/crystal-2898037_1280-removebg-preview.png",
         imgParts         : [],
     },
@@ -20,28 +33,16 @@ export const levelConstructorArray =
         brickPadding     : 5,
         brickOffsetTop   : 180,
         brickOffsetLeft  : 300,
-        nbBonusBrick     : 5,
-        brickBackground  : "assets/img/test.png",
-        imgParts         : [],
-    },
-    {
-        brickRowCount    : 5,
-        brickColumnCount : 5,
-        brickWidth       : 75,
-        brickHeight      : 30,
-        brickPadding     : 5,
-        brickOffsetTop   : 180,
-        brickOffsetLeft  : 300,
         nbBonusBrick     : 6,
-        brickBackground  : "assets/img/brick.jpg",
+        brickBackground  : "assets/img/crystal-2898037_1280-removebg-preview.png",
         imgParts         : [],
     },
 ];
 
 for (let i = 0; i < levelConstructorArray.length; i++){
-    let actualLevel = levelConstructorArray[i];
-    let img = new Image();
-    img.src = actualLevel.brickBackground;
+    let actualLevel = levelConstructorArray[i],
+        img         = new Image();
+    img.src    = actualLevel.brickBackground;
     img.onload = () => {
         splitImage(i,img)
     }
